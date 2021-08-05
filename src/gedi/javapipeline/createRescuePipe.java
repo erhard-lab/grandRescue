@@ -24,7 +24,6 @@ public class createRescuePipe extends GediProgram {
         addInput(params.tmp);
         addInput(params.files);
         addInput(params.slam);
-        addInput(params.pairedEnd);
 
         addOutput(params.bashFile);
     }
@@ -40,7 +39,7 @@ public class createRescuePipe extends GediProgram {
         String tmpDir = getParameter(6);
         ArrayList<String> files = getParameters(7);
         boolean slam = getBooleanParameter(8);
-        boolean pairedEnd = getBooleanParameter(9);
+        ArrayList<String> tags = getParameters(9);
 
         int threadCount = 1;
         int round = 0;
@@ -55,7 +54,7 @@ public class createRescuePipe extends GediProgram {
 
 
         for(String file : files){
-            String pathString = createRescueBash(writeAll, origGenome, pseudoGenome, file, pseudoStarIndex, tmpDir, getPrefix(file), pairedEnd);
+            String pathString = createRescueBash(writeAll, origGenome, pseudoGenome, file, pseudoStarIndex, tmpDir, getPrefix(file), tags);
             System.out.println("--" + getPrefix(file));
 
             writer.append("echo $( date +\"%F %T\" ) Starting " + getPrefix(file)+"\n");

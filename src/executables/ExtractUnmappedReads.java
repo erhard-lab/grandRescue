@@ -1,6 +1,7 @@
 package executables;
 
 import gedi.app.Gedi;
+import gedi.core.genomic.Genomic;
 
 import java.util.ArrayList;
 
@@ -13,7 +14,8 @@ public class ExtractUnmappedReads {
 
         boolean writeAll = false;
         boolean compress = false;
-        boolean pairedEnd = false;
+        ArrayList<String> tags = new ArrayList<>();
+        String f = "";
 
         int i;
         for (i=0; i<args.length; i++) {
@@ -22,12 +24,19 @@ public class ExtractUnmappedReads {
             else if(args[i].equals("-c")) {
                 compress = true;
             }
-            else if(args[i].equals("-pairedEnd")) {
-                pairedEnd = true;
-            }
             else if (args[i].equals("-h")) {
                 usage();
                 return;
+            }
+            else if (args[i].equals("-tags")) {
+                ArrayList<String> tagnames = new ArrayList<>();
+                i = checkMultiParam(args, ++i, tagnames);
+                tags.addAll(tagnames);
+            }
+            else if(args[i].equals("-f")) {
+                f = args[i+1];
+                i++;
+                break;
             }
             else
                 break;
@@ -38,7 +47,7 @@ public class ExtractUnmappedReads {
             System.exit(1);
         }
 
-        extractUnmappedReadsToFastq(args[i], writeAll, compress, pairedEnd);
+        extractUnmappedReadsToFastq(f, writeAll, compress, tags);
     }
 
     private static String checkParam(String[] args, int index) {
@@ -53,7 +62,7 @@ public class ExtractUnmappedReads {
 
     private static void usage() {
         System.out.println("\nA method to extract unmapped reads from a bam-file and convert all T's to C's for 4sU-read rescue via PseudoMapping. (Bam-files only contain unmapped reads if the STAR parameter outSAMmapped is set to Within)\n");
-        System.out.println("\nextractUnmappedReads [-all] [-c] [-pe] <input>\n\n -all Output fastq-files for mapped reads and non-T-to-C conversed reads too\n -c compress intermediate files from 'all' param to fastq.gz \n -pe Data is paired end");
+        System.out.println("\nextractUnmappedReads [-all] [-c] [-tags] <input>\n\n -all Output fastq-files for mapped reads and non-T-to-C conversed reads too\n -c compress intermediate files from 'all' param to fastq.gz \n -tags BAM-File tags to keep");
     }
 
 

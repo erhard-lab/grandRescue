@@ -3,9 +3,11 @@ package gedi.util;
 import gedi.util.functions.EI;
 import gedi.util.functions.ExtendedIterator;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import java.io.*;
+import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -130,9 +132,12 @@ public class MMSimulationUtil {
      *             Saves the original read sequence (with T->C MM's from 4su labeling) in ReadID, then changes all T's to C's in Read Sequence.
      *             These reads can then be mapped to the pseudo-genome where all T's to C's are converted.
      */
-    public static void extractUnmappedReadsToFastq(File file, boolean writeAll, boolean compress, boolean pairedEnd) {
+    public static void extractUnmappedReadsToFastq(File file, boolean writeAll, boolean compress, ArrayList<String> tags) {
         System.out.println("Extracting unmappable reads...");
         SamReader reader = SamReaderFactory.makeDefault().open(file);
+        SAMRecordIterator pairedIT = reader.iterator();
+        boolean pairedEnd = pairedIT.next().getReadPairedFlag();
+        pairedIT.close();
         ExtendedIterator<SAMRecord> it = EI.wrap(reader.iterator()).progress();
         HashMap<String, SAMRecord[]> pairedReadMap = new HashMap<>();
 
@@ -162,12 +167,21 @@ public class MMSimulationUtil {
                         quality = StringUtils.reverse(quality).toString();
                     }
 
+                    String tagsToAdd = "_";
+                    for(String s : tags){
+                        Object val = rec.getAttribute(s);
+                        if(val == null){
+                            continue;
+                        }
+                        tagsToAdd = tagsToAdd + "*" + s + "-" + val + ";";
+                    }
+
                     if (rec.getReadUnmappedFlag()) {
                         unmappedWriter.append("@" + rec.getReadName() + "\n");
                         unmappedWriter.append(seq + "\n");
                         unmappedWriter.append("+\n");
                         unmappedWriter.append(quality + "\n");
-                        unmappedT2CWriter.append("@" + rec.getReadName() + "_#" + seq + "\n");
+                        unmappedT2CWriter.append("@" + rec.getReadName() + "_#" + seq + tagsToAdd + "\n");
                         unmappedT2CWriter.append(seq.replace("T", "C") + "\n");
                         unmappedT2CWriter.append("+\n");
                         unmappedT2CWriter.append(quality + "\n");
@@ -225,12 +239,27 @@ public class MMSimulationUtil {
                         quality2 = StringUtils.reverse(quality2).toString();
                     }
 
+                    String tagsToAdd1 = "_";
+                    String tagsToAdd2 = "_";
 
-                    unmappedT2CWriter.append("@" + rec1.getReadName() + "_#" + seq1 + "_#" + seq2 + "\n");
+                    for(String s : tags){
+                        Object val = rec1.getAttribute(s);
+                        if(val == null){
+                            continue;
+                        }
+                        tagsToAdd1 = tagsToAdd1 + "*" + s + "-" + val + ";";
+
+                        val = rec2.getAttribute(s);
+                        if(val == null){
+                            continue;
+                        }
+                        tagsToAdd2 = tagsToAdd2 + "*" + s + "-" + val + ";";
+                    }
+                    unmappedT2CWriter.append("@" + rec1.getReadName() + "_#" + seq1 + "_#" + seq2 + tagsToAdd1 + "\n");
                     unmappedT2CWriter.append(seq1.replace("T", "C") + "\n");
                     unmappedT2CWriter.append("+\n");
                     unmappedT2CWriter.append(quality1 + "\n");
-                    unmappedT2CWriter2.append("@" + rec2.getReadName() + "_#" + seq1 + "_#" + seq2 + "\n");
+                    unmappedT2CWriter2.append("@" + rec2.getReadName() + "_#" + seq1 + "_#" + seq2 + tagsToAdd2 + "\n");
                     unmappedT2CWriter2.append(seq2.replace("T", "C") + "\n");
                     unmappedT2CWriter2.append("+\n");
                     unmappedT2CWriter2.append(quality2 + "\n");
@@ -286,8 +315,8 @@ public class MMSimulationUtil {
         }
     }
 
-    public static void extractUnmappedReadsToFastq(String file, boolean writeAll, boolean compress, boolean pairedEnd) {
-        extractUnmappedReadsToFastq(new File(file), writeAll, compress, pairedEnd);
+    public static void extractUnmappedReadsToFastq(String file, boolean writeAll, boolean compress, ArrayList<String> tags) {
+        extractUnmappedReadsToFastq(new File(file), writeAll, compress, tags);
     }
 
     /**

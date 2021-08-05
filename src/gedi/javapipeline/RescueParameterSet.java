@@ -17,10 +17,10 @@ public class RescueParameterSet extends GediParameterSet {
     public GediParameter<String> prefix = new GediParameter<String>(this,"prefix", "The prefix used for all output files", false, new StringParameterType());
     public GediParameter<Boolean> all = new GediParameter<Boolean>(this,"all", "Full output of read extraction", false, new BooleanParameterType());
     public GediParameter<Boolean> slam = new GediParameter<Boolean>(this,"slam", "Run grandslam on final dataset", false, new BooleanParameterType());
-    public GediParameter<Boolean> pairedEnd = new GediParameter<Boolean>(this,"pairedEnd", "Data is paired end", false, new BooleanParameterType());
     public GediParameter<String> pseudoSTAR = new GediParameter<String>(this,"pseudoSTAR", "The path to the STAR index of the pseudo genome", false, new StringParameterType());
     public GediParameter<String> tmp = new GediParameter<String>(this,"tmp", "The path for temporary files to be placed", false, new StringParameterType());
     public GediParameter<String> files = new GediParameter<String>(this,"files", "The paths to the mapped 4sU-experiment bam files", true, new StringParameterType());
+    public GediParameter<String> tags = new GediParameter<String>(this,"tags", "BAM-File tags to keep", true, new StringParameterType());
 
     public GediParameter<File> bashFile = new GediParameter<File>(this,"${prefix}.sh", "Final bash file", false, new FileParameterType());
 

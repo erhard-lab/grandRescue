@@ -757,14 +757,16 @@ public class BAMUtils {
         return origRGR;
     }
 
-    public static void samOutputFromPseudoMapping(String bamFile, String referenceBam, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand, boolean pairedEnd) {
+    public static void samOutputFromPseudoMapping(String bamFile, String referenceBam, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand) {
         SamReader reader = SamReaderFactory.makeDefault().open(new File(bamFile));
+        boolean pairedEnd = reader.iterator().next().getReadPairedFlag();
         ExtendedIterator<SAMRecord> it = EI.wrap(reader.iterator());
         SAMFileHeader header = SamReaderFactory.makeDefault().getFileHeader(new File(referenceBam));
         SAMFileWriter samWriter = new SAMFileWriterFactory().makeBAMWriter(header, false, new File(bamFile.replace(".bam", "_reverted.bam")));
         int readCounter = 0;
         HashMap<String, SAMRecord[]> pairedReadMap = new HashMap<>();
         Pattern p = Pattern.compile("\\S+#(\\w+)");
+        Pattern tagPattern = Pattern.compile("\\*([\\S&&[^;\\*]]+)\\-([\\S&&[^;\\*]]+);");
 
 
         if (pairedEnd) {
@@ -786,7 +788,7 @@ public class BAMUtils {
             }
 
             if (!pairedEnd) {
-                rec = createRecFromUnmappable(rec, p, origGenome, mapGenome, toPlusStrand, pairedEnd);
+                rec = createRecFromUnmappable(rec, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd);
                 samWriter.addAlignment(rec);
                 readCounter++;
                 if (readCounter % Math.pow(10, 7) == 0) {
@@ -819,10 +821,10 @@ public class BAMUtils {
                 SAMRecord rec1 = entry.getValue()[0];
                 SAMRecord rec2 = entry.getValue()[1];
                 if (rec1 != null) {
-                    rec1 = createRecFromUnmappable(rec1, p, origGenome, mapGenome, toPlusStrand, pairedEnd);
+                    rec1 = createRecFromUnmappable(rec1, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd);
                 }
                 if (rec2 != null) {
-                    rec2 = createRecFromUnmappable(rec2, p, origGenome, mapGenome, toPlusStrand, pairedEnd);
+                    rec2 = createRecFromUnmappable(rec2, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd);
                 }
                 completePairedReads(rec1, rec2);
 
@@ -841,7 +843,7 @@ public class BAMUtils {
         System.out.println("-noInduced:" + noInduced);
     }
 
-    public static SAMRecord createRecFromUnmappable(SAMRecord record, Pattern p, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand, boolean pairedEnd) {
+    public static SAMRecord createRecFromUnmappable(SAMRecord record, Pattern p, Pattern tagPattern, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand, boolean pairedEnd) {
         SAMRecord rec = record.deepCopy();
         try {
             Matcher m = p.matcher(rec.getReadName());
@@ -855,6 +857,12 @@ public class BAMUtils {
                 readSequence = m.group(2);
             }
             rec.setReadString(readSequence);
+
+            Matcher tagMatcher = tagPattern.matcher(rec.getReadName());
+            while(tagMatcher.find()){
+                rec.setAttribute(tagMatcher.group(1), tagMatcher.group(2));
+            }
+
 
             String[] inducedPos = inducedPositions(rec, origGenome, mapGenome, toPlusStrand);
             rec.setReadNegativeStrandFlag(inducedPos[1].equals("-"));

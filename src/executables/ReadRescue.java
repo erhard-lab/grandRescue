@@ -23,16 +23,13 @@ public class ReadRescue {
         String pseudoStarIndex = "";
         String tmpDir = Paths.get("").toString()+"tmp";
         String prefix = "";
+        ArrayList<String> tags = new ArrayList<>();
 
 
         int i;
         for (i=0; i<args.length; i++) {
             if (args[i].equals("-all"))
                 writeAll = true;
-
-            else if (args[i].equals("-pairedEnd")){
-                pairedEnd = true;
-            }
             else if (args[i].equals("-genome")) {
                 ArrayList<String> gnames = new ArrayList<>();
                 i = checkMultiParam(args, ++i, gnames);
@@ -62,7 +59,12 @@ public class ReadRescue {
                 ArrayList<String> gnames = new ArrayList<>();
                 i = checkMultiParam(args, ++i, gnames);
                 prefix = gnames.get(0);
-            } else if(args[i].equals("-h")){
+            }
+            else if(args[i].equals("-tags")){
+                ArrayList<String> tagnames = new ArrayList<>();
+                i = checkMultiParam(args, ++i, tagnames);
+                tags.addAll(tagnames);
+            }else if(args[i].equals("-h")){
                 usage();
                 return;
             }
@@ -77,7 +79,7 @@ public class ReadRescue {
             System.exit(1);
         }
 
-        createRescueBash(writeAll, origGenome, pseudoGenome, origMapped, pseudoStarIndex, tmpDir, prefix, pairedEnd);
+        createRescueBash(writeAll, origGenome, pseudoGenome, origMapped, pseudoStarIndex, tmpDir, prefix, tags);
 
     }
 
