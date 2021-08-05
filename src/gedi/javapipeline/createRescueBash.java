@@ -48,7 +48,6 @@ public class createRescueBash {
             file = file.replaceAll("\\{genome}", origGenome);
             file = file.replaceAll("\\{pseudogenome}", pseudoGenome);
             file = file.replaceAll("\\{files}", prefix+"_unmapped_T2C.fastq");
-            file = file.replaceAll("\\{samtools}", "samtools view -b -F 4 {prefix}.bam > {prefix}_final.bam");
             file = file.replaceAll("\\{prefix}", prefix);
             file = file.replaceAll("\\{tags}", tagnames);
 

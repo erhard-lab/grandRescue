@@ -763,7 +763,6 @@ public class BAMUtils {
         ExtendedIterator<SAMRecord> it = EI.wrap(reader.iterator());
         SAMFileHeader header = SamReaderFactory.makeDefault().getFileHeader(new File(referenceBam));
         SAMFileWriter samWriter = new SAMFileWriterFactory().makeBAMWriter(header, false, new File(bamFile.replace(".bam", "_reverted.bam")));
-        int readCounter = 0;
         HashMap<String, SAMRecord[]> pairedReadMap = new HashMap<>();
         Pattern p = Pattern.compile("\\S+#(\\w+)");
         Pattern tagPattern = Pattern.compile("\\*([\\S&&[^;\\*]]+)\\-([\\S&&[^;\\*]]+);");
@@ -790,10 +789,6 @@ public class BAMUtils {
             if (!pairedEnd) {
                 rec = createRecFromUnmappable(rec, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd);
                 samWriter.addAlignment(rec);
-                readCounter++;
-                if (readCounter % Math.pow(10, 7) == 0) {
-                    System.out.println(readCounter + " reverted reads");
-                }
             } else {
                 if (!pairedReadMap.containsKey(rec.getReadName())) {
                     pairedReadMap.put(rec.getReadName(), new SAMRecord[2]);
@@ -809,35 +804,31 @@ public class BAMUtils {
                     throw new IllegalArgumentException("Read neither first of pair nor second of pair \n" + rec.getSAMString());
                 }
             }
+        }
 
-            for (Map.Entry<String, SAMRecord[]> entry : pairedReadMap.entrySet()) {
-                SAMRecord[] recs = entry.getValue();
-                if (recs == null) {
-                    continue;
-                }
+        for (Map.Entry<String, SAMRecord[]> entry : pairedReadMap.entrySet()) {
+            SAMRecord[] recs = entry.getValue();
+            if (recs == null) {
+                continue;
             }
+            SAMRecord rec1 = entry.getValue()[0];
+            SAMRecord rec2 = entry.getValue()[1];
+            if (rec1 != null) {
+                rec1 = createRecFromUnmappable(rec1, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd);
+            }
+            if (rec2 != null) {
+                rec2 = createRecFromUnmappable(rec2, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd);
+            }
+            completePairedReads(rec1, rec2);
 
-            for (Map.Entry<String, SAMRecord[]> entry : pairedReadMap.entrySet()) {
-                SAMRecord rec1 = entry.getValue()[0];
-                SAMRecord rec2 = entry.getValue()[1];
-                if (rec1 != null) {
-                    rec1 = createRecFromUnmappable(rec1, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd);
-                }
-                if (rec2 != null) {
-                    rec2 = createRecFromUnmappable(rec2, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd);
-                }
-                completePairedReads(rec1, rec2);
-
-                if (rec1 != null) {
-                    samWriter.addAlignment(rec1);
-                    readCounter++;
-                }
-                if (rec2 != null) {
-                    samWriter.addAlignment(rec2);
-                    readCounter++;
-                }
+            if (rec1 != null) {
+                samWriter.addAlignment(rec1);
+            }
+            if (rec2 != null) {
+                samWriter.addAlignment(rec2);
             }
         }
+
         samWriter.close();
 
         System.out.println("-noInduced:" + noInduced);
@@ -859,7 +850,7 @@ public class BAMUtils {
             rec.setReadString(readSequence);
 
             Matcher tagMatcher = tagPattern.matcher(rec.getReadName());
-            while(tagMatcher.find()){
+            while (tagMatcher.find()) {
                 rec.setAttribute(tagMatcher.group(1), tagMatcher.group(2));
             }
 
