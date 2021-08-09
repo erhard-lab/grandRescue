@@ -15,11 +15,10 @@ import java.util.ArrayList;
 public class createRescueBash {
 
 
-    public static String createRescueBash(boolean writeAll, String origGenome, String pseudoGenome, String origMapped, String pseudoStarIndex, String tmpDir, String prefix, ArrayList<String> tags) {
+    public static String createRescueBash(boolean writeAll, boolean k, String origGenome, String pseudoGenome, String origMapped, String pseudoStarIndex, String tmpDir, String prefix, ArrayList<String> tags) {
         String pathString = Paths.get(prefix+".sh").toAbsolutePath().toString();
         try {
             Charset charset = StandardCharsets.UTF_8;
-
             String name = "readRescue.sh";
             String tagnames = "";
             if(!tags.isEmpty()){
@@ -40,7 +39,12 @@ public class createRescueBash {
             }
 
             if(!writeAll){
-                file = file.replaceAll("-all", "");
+                file = file.replace("-all", "");
+            }
+            if(!k){
+                file = file.replace("{keep}", "cd $wd\nrm -r {tmp}\n");
+            } else {
+                file = file.replace("{keep}", "");
             }
             file = file.replaceAll("\\{tmp}", tmpDir);
             file = file.replaceAll("\\{bampath}", origMapped);
@@ -50,6 +54,8 @@ public class createRescueBash {
             file = file.replaceAll("\\{files}", prefix+"_unmapped_T2C.fastq");
             file = file.replaceAll("\\{prefix}", prefix);
             file = file.replaceAll("\\{tags}", tagnames);
+
+
 
             Files.write(Paths.get(pathString), file.getBytes(charset));
             File finalFile = new File(pathString);

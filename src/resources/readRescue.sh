@@ -21,4 +21,5 @@ gedi -e Bam2CIT {prefix}_rescued.cit {prefix}_rescued.bam
 gedi -t . -e CorrectCIT {prefix}_rescued.cit
 gedi -t . -e ReadCount -g {genome} -m Weight {prefix}_rescued.cit
 mv {prefix}_rescued.cit* $wd
+{keep}
 echo "Done"
