@@ -173,7 +173,7 @@ public class MMSimulationUtil {
                         if(val == null){
                             continue;
                         }
-                        tagsToAdd = tagsToAdd + "*" + s + "-" + val + ";";
+                        tagsToAdd = tagsToAdd + "*" + s + "~" + val + ";";
                     }
 
                     if (rec.getReadUnmappedFlag()) {
@@ -247,13 +247,13 @@ public class MMSimulationUtil {
                         if(val == null){
                             continue;
                         }
-                        tagsToAdd1 = tagsToAdd1 + "*" + s + "-" + val + ";";
+                        tagsToAdd1 = tagsToAdd1 + "*" + s + "~" + val + ";";
 
                         val = rec2.getAttribute(s);
                         if(val == null){
                             continue;
                         }
-                        tagsToAdd2 = tagsToAdd2 + "*" + s + "-" + val + ";";
+                        tagsToAdd2 = tagsToAdd2 + "*" + s + "~" + val + ";";
                     }
                     unmappedT2CWriter.append("@" + rec1.getReadName() + "_#" + seq1 + "_#" + seq2 + tagsToAdd1 + "\n");
                     unmappedT2CWriter.append(seq1.replace("T", "C") + "\n");

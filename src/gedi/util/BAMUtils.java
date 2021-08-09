@@ -759,17 +759,19 @@ public class BAMUtils {
 
     public static void samOutputFromPseudoMapping(String bamFile, String referenceBam, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand) {
         SamReader reader = SamReaderFactory.makeDefault().open(new File(bamFile));
-        boolean pairedEnd = reader.iterator().next().getReadPairedFlag();
+        SAMRecordIterator pairedIT = reader.iterator();
+        boolean pairedEnd = pairedIT.next().getReadPairedFlag();
+        pairedIT.close();
         ExtendedIterator<SAMRecord> it = EI.wrap(reader.iterator());
         SAMFileHeader header = SamReaderFactory.makeDefault().getFileHeader(new File(referenceBam));
         SAMFileWriter samWriter = new SAMFileWriterFactory().makeBAMWriter(header, false, new File(bamFile.replace(".bam", "_reverted.bam")));
         HashMap<String, SAMRecord[]> pairedReadMap = new HashMap<>();
-        Pattern p = Pattern.compile("\\S+#(\\w+)");
-        Pattern tagPattern = Pattern.compile("\\*([\\S&&[^;\\*]]+)\\-([\\S&&[^;\\*]]+);");
+        Pattern p = Pattern.compile("\\S+#(\\w+)_");
+        Pattern tagPattern = Pattern.compile("\\*([\\S&&[^;\\*]]+)\\~([\\S&&[^;\\*]]+);");
 
 
         if (pairedEnd) {
-            p = Pattern.compile("\\S+_#(\\w+)_#(\\w+)");
+            p = Pattern.compile("\\S+_#(\\w+)_#(\\w+)_");
         }
 
         for (SAMRecord rec : it.loop()) {
@@ -847,10 +849,14 @@ public class BAMUtils {
             } else if (rec.getSecondOfPairFlag()) {
                 readSequence = m.group(2);
             }
+            System.out.println("____");
+            System.out.println(readSequence);
+            System.out.println(rec.getBaseQualityString());
             rec.setReadString(readSequence);
 
             Matcher tagMatcher = tagPattern.matcher(rec.getReadName());
             while (tagMatcher.find()) {
+                System.out.println(tagMatcher.group(1) + " - " + tagMatcher.group(2));
                 rec.setAttribute(tagMatcher.group(1), tagMatcher.group(2));
             }
 

@@ -24,6 +24,7 @@ public class createRescuePipe extends GediProgram {
         addInput(params.tmp);
         addInput(params.files);
         addInput(params.slam);
+        addInput(params.tags);
 
         addOutput(params.bashFile);
     }
