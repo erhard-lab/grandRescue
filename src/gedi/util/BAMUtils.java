@@ -937,64 +937,6 @@ public class BAMUtils {
         }
     }
 
-    public static void mergeBAMFilesInCIT(String bamFile1, String bamFile2, String prefix) {
-        SamReader reader1 = SamReaderFactory.makeDefault().open(new File(bamFile1));
-        SamReader reader2 = SamReaderFactory.makeDefault().open(new File(bamFile2));
-
-        ExtendedIterator<SAMRecord> it1 = EI.wrap(reader1.iterator());
-        ExtendedIterator<SAMRecord> it2 = EI.wrap(reader2.iterator());
-
-        try {
-            CenteredDiskIntervalTreeStorage<DefaultAlignedReadsData> out = new CenteredDiskIntervalTreeStorage<>(bamFile1.replace(".bam", "_merged.cit"), DefaultAlignedReadsData.class);
-            out.setMetaData(DynamicObject.from("conditions", DynamicObject.arrayOfObjects("name", prefix)));
-            IterateIntoSink<ImmutableReferenceGenomicRegion<DefaultAlignedReadsData>> sink = new IterateIntoSink<>(r -> out.fill(r));
-
-            for (SAMRecord rec : it1.loop()) {
-                try {
-                    if (rec.getReadUnmappedFlag()) {
-                        continue;
-                    }
-                    int[] cumNum = new int[1];
-                    cumNum[0] = 1;
-                    FactoryGenomicRegion fac = BamUtils.getFactoryGenomicRegion(rec, cumNum, false, false, null);
-                    fac.add(rec, 0);
-                    String strand = "+";
-                    if (rec.getReadNegativeStrandFlag()) {
-                        strand = "-";
-                    }
-                    ImmutableReferenceGenomicRegion reg = new ImmutableReferenceGenomicRegion(Chromosome.obtain(rec.getReferenceName() + strand), fac, fac.create());
-                    sink.put(reg);
-                } catch (SAMFormatException ex) {
-                    continue;
-                }
-            }
-
-            for (SAMRecord rec : it2.loop()) {
-                try {
-                    if (rec.getReadUnmappedFlag()) {
-                        continue;
-                    }
-                    int[] cumNum = new int[1];
-                    cumNum[0] = 1;
-                    FactoryGenomicRegion fac = BamUtils.getFactoryGenomicRegion(rec, cumNum, false, false, null);
-                    fac.add(rec, 0);
-                    String strand = "+";
-                    if (rec.getReadNegativeStrandFlag()) {
-                        strand = "-";
-                    }
-                    ImmutableReferenceGenomicRegion reg = new ImmutableReferenceGenomicRegion(Chromosome.obtain(rec.getReferenceName() + strand), fac, fac.create());
-                    sink.put(reg);
-                } catch (SAMFormatException ex) {
-                    continue;
-                }
-            }
-            sink.finish();
-        } catch (IOException | InterruptedException e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
-
 }
 
 class IndexEntry {

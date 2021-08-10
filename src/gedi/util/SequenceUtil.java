@@ -48,6 +48,10 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Class SequenceUtil from https://github.com/samtools/htsjdk/tree/master/src/main/java/htsjdk/samtools
+ * and slightly modified
+ */
 public class SequenceUtil {
     /** Byte typed variables for all normal bases. */
     public static final byte a = 'a', c = 'c', g = 'g', t = 't', n = 'n', A = 'A', C = 'C', G = 'G', T = 'T', N = 'N';
@@ -1032,8 +1036,7 @@ public class SequenceUtil {
         if (calcNM) record.setAttribute(SAMTag.NM.name(), nmCount);
     }
 
-    public static void calculateMdAndNmTags(final SAMRecord record, final byte[] ref, final int refOffset,
-                                            final boolean calcMD, final boolean calcNM) {
+    public static void calculateMdAndNmTags(final SAMRecord record, final byte[] ref, final int refOffset, final boolean calcMD, final boolean calcNM) {
         if (!calcMD && !calcNM)
             return;
 
@@ -1106,51 +1109,4 @@ public class SequenceUtil {
         if (calcNM)
             record.setAttribute(SAMTag.NM.name(), nm);
     }
-
-    public static byte upperCase(final byte base) {
-        return base >= a ? (byte) (base - (a - A)) : base;
-    }
-
-    public static byte[] upperCase(final byte[] bases) {
-        for (int i = 0; i < bases.length; i++)
-            bases[i] = upperCase(bases[i]);
-        return bases;
-    }
-
-    /** Generates all possible unambiguous kmers (upper-case) of length and returns them as byte[]s. */
-    public static List<byte[]> generateAllKmers(final int length) {
-        final List<byte[]> sofar = new LinkedList<>();
-
-        if (sofar.isEmpty()) {
-            sofar.add(new byte[length]);
-        }
-
-        while (true) {
-            final byte[] bs = sofar.remove(0);
-            int indexOfNextBase = -1;
-            for (int i = 0; i < bs.length; ++i) {
-                if (bs[i] == 0) {
-                    indexOfNextBase = i;
-                    break;
-                }
-            }
-
-            if (indexOfNextBase == -1) {
-                sofar.add(bs);
-                break;
-            } else {
-                for (final byte b : VALID_BASES_UPPER) {
-                    final byte[] next = Arrays.copyOf(bs, bs.length);
-                    next[indexOfNextBase] = b;
-                    sofar.add(next);
-                }
-            }
-        }
-
-        return sofar;
-    }
-
-
-
-
 }

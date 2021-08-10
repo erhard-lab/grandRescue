@@ -1,11 +1,10 @@
 package executables;
 
 import gedi.app.Gedi;
-import gedi.core.genomic.Genomic;
-
 import java.util.ArrayList;
 
-import static gedi.util.MMSimulationUtil.extractUnmappedReadsToFastq;
+import static gedi.util.ReadExtraction.extractUnmappedReadsToFastq;
+
 
 public class ExtractUnmappedReads {
 

@@ -6,125 +6,16 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
+
 import java.io.*;
-import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
-public class MMSimulationUtil {
-
-
-    public static String cigarToString(String cigar) {
-        String output = "";
-        String currentNumber = "";
-        for (int i = 0; i < cigar.length(); i++) {
-            if (Character.isDigit(cigar.charAt(i))) {
-                currentNumber = currentNumber + cigar.charAt(i);
-            } else {
-                int number = Integer.valueOf(currentNumber);
-                char currentChar = cigar.charAt(i);
-
-                for (int j = 0; j < number; j++) {
-                    output = output + currentChar;
-                }
-                currentNumber = "";
-            }
-        }
-
-        return output;
-    }
-
-    public static String reverseCigar(String cigar) {
-        String out = "";
-        int cigarCounter = 0;
-
-        while (cigarCounter < cigar.length()) {
-            char type = cigar.charAt(cigarCounter);
-            String getCigarNumber = "";
-            while (Character.isDigit(type)) {
-                getCigarNumber = getCigarNumber + type;
-                cigarCounter++;
-                type = cigar.charAt(cigarCounter);
-            }
-            cigarCounter++;
-            int cigarNumber = Integer.valueOf(getCigarNumber);
-            out = cigarNumber + "" + type + out;
-        }
-        return out;
-    }
-
-    public static void splitDataSet(String path, double percentage, boolean onlyFirstHalf) {
-        boolean secondHalf = false;
-        try {
-            if (percentage >= 1 || percentage <= 0) {
-                throw new IllegalArgumentException("0 < percentage < 1");
-            }
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path.replace(".fastq", "_1.fastq")));
-            FunctorUtils.BlockIterator<String, ArrayList<String>> blocks = EI.lines(new File(path)).block(l -> l.startsWith("@"));
-            int count = 0;
-            int blockcount = blocks.countInt();
-            double blockpercentage = blockcount * percentage;
-            int count1 = 0;
-            int count2 = 0;
-            blocks = EI.lines(new File(path)).block(l -> l.startsWith("@"));
-            for (ArrayList<String> list : blocks.loop()) {
-                int loopcount = 0;
-                for (String s : list) {
-                    count1++;
-                    writer.append(s);
-                    if (loopcount < 3) {          //avoid additional \n at the end of the files and place \n after one block only if its not the last in the file. check below
-                        writer.append("\n");
-                    }
-                    loopcount++;
-                }
-                count++;
-                if (count >= blockpercentage && !secondHalf) {
-                    secondHalf = true;
-                    writer.close();
-                    if (onlyFirstHalf) {
-                        break;
-                    }
-                    count2 = count1;
-                    count1 = 0;
-                    writer = new BufferedWriter(new FileWriter(path.replace(".fastq", "_2.fastq")));
-                } else if (!secondHalf) {
-                    writer.append("\n");
-                } else if (secondHalf) {
-                    if (blocks.hasNext()) {
-                        writer.append("\n");
-                    }
-                }
-            }
-            writer.close();
-            System.out.println(count1 + " " + count2);
-
-
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
-    public static Map<String, Double> getNTRMap(String path) {
-        HashMap<String, Double> map = new HashMap<>();
-        Scanner sc = null;
-        try {
-            sc = new Scanner(new File(path));
-        } catch (FileNotFoundException e) {
-            System.out.println("File not found. Try absolute path");
-        }
-        sc.nextLine();
-        while (sc.hasNextLine()) {
-            String line = sc.nextLine();
-            String[] lineArr = line.split(",");
-            map.put(lineArr[0], Double.valueOf(lineArr[1]));
-        }
-
-
-        return map;
-
-    }
+public class ReadExtraction {
 
     /**
      * @param file .bam-File of all reads from 4sU-labelled experiment
@@ -286,35 +177,6 @@ public class MMSimulationUtil {
         }
     }
 
-    public static void extractUnmappedPairedReads(String file) {
-        System.out.println("Extracting unmappable paired-end reads...");
-        SamReader reader = SamReaderFactory.makeDefault().open(new File(file));
-        ExtendedIterator<SAMRecord> it = EI.wrap(reader.iterator()).progress();
-        HashMap<String, SAMRecord[]> pairedReadMap = new HashMap<>();
-
-        for (SAMRecord rec : it.loop()) {
-
-            //If both read & mate are mapped, skip
-            if (!rec.getReadUnmappedFlag() && !rec.getMateUnmappedFlag()) {
-                continue;
-            }
-
-            if (!pairedReadMap.containsKey(rec.getReadName())) {
-                pairedReadMap.put(rec.getReadName(), new SAMRecord[2]);
-            }
-
-            SAMRecord[] current = pairedReadMap.get(rec.getReadName());
-
-            if (rec.getFirstOfPairFlag()) {
-                current[0] = rec;
-            } else if (rec.getSecondOfPairFlag()) {
-                current[1] = rec;
-            } else {
-                throw new IllegalArgumentException("Read neither first of pair nor second of pair \n" + rec.getSAMString());
-            }
-        }
-    }
-
     public static void extractUnmappedReadsToFastq(String file, boolean writeAll, boolean compress, ArrayList<String> tags) {
         extractUnmappedReadsToFastq(new File(file), writeAll, compress, tags);
     }
@@ -383,5 +245,6 @@ public class MMSimulationUtil {
             e.printStackTrace();
         }
     }
+
 
 }
