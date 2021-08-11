@@ -19,7 +19,6 @@ public class RescuePseudoReads {
         String origMapped = "";
         String prefix = "";
         boolean mapToPlusStrand = true;
-        boolean pairedEnd = false;
 
         int i;
         for (i=0; i<args.length; i++) {
@@ -48,9 +47,6 @@ public class RescuePseudoReads {
                 i = checkMultiParam(args, ++i, gnames);
                 prefix = gnames.get(0);
             }
-            else if(args[i].equals("-pairedEnd")){
-                pairedEnd = true;
-            }
             else if(args[i].equals("-h")){
                 usage();
                 return;
@@ -60,7 +56,7 @@ public class RescuePseudoReads {
         }
 
         System.out.println("Rescue pseudo-reads...");
-        samOutputFromPseudoMapping(pseudoMapped, origMapped, Genomic.get(origGenome), Genomic.get(pseudoGenome), mapToPlusStrand, pairedEnd);
+        samOutputFromPseudoMapping(pseudoMapped, origMapped, Genomic.get(origGenome), Genomic.get(pseudoGenome), mapToPlusStrand);
         //mergeBAMFilesInCIT(pseudoMapped.replace(".bam", "_reverted.bam"), origMapped, prefix);
         createMetadata(prefix);
     }

@@ -15,17 +15,7 @@ public class ReadRescuePipe {
 
         RescueParameterSet params = new RescueParameterSet();
         GediProgram pipeline = GediProgram.create("ReadRescue-Pipe", new createRescuePipe(params));
-        GediProgram.run(pipeline, params.paramFile, new CommandLineHandler("ReadRescue", "Rescue unmappable 4sU reads", args));
-    }
-
-    private static String checkParam(String[] args, int index) {
-        if (index>=args.length || args[index].startsWith("-")) throw new RuntimeException("Missing argument for "+args[index-1]);
-        return args[index];
-    }
-    private static int checkMultiParam(String[] args, int index, ArrayList<String> re) {
-        while (index<args.length && !args[index].startsWith("-"))
-            re.add(args[index++]);
-        return index-1;
+        GediProgram.run(pipeline, params.paramFile, new CommandLineHandler("ReadRescuePipe", "Rescue unmappable 4sU reads", args));
     }
 
     private static void usage() {

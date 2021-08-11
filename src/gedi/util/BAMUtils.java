@@ -757,18 +757,21 @@ public class BAMUtils {
         return origRGR;
     }
 
-    public static void samOutputFromPseudoMapping(String bamFile, String referenceBam, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand, boolean pairedEnd) {
+    public static void samOutputFromPseudoMapping(String bamFile, String referenceBam, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand) {
         SamReader reader = SamReaderFactory.makeDefault().open(new File(bamFile));
+        SAMRecordIterator pairedIT = reader.iterator();
+        boolean pairedEnd = pairedIT.next().getReadPairedFlag();
+        pairedIT.close();
         ExtendedIterator<SAMRecord> it = EI.wrap(reader.iterator());
         SAMFileHeader header = SamReaderFactory.makeDefault().getFileHeader(new File(referenceBam));
         SAMFileWriter samWriter = new SAMFileWriterFactory().makeBAMWriter(header, false, new File(bamFile.replace(".bam", "_reverted.bam")));
-        int readCounter = 0;
         HashMap<String, SAMRecord[]> pairedReadMap = new HashMap<>();
-        Pattern p = Pattern.compile("\\S+#(\\w+)");
+        Pattern p = Pattern.compile("\\S+#(\\w+)_");
+        Pattern tagPattern = Pattern.compile("\\*([\\S&&[^;\\*]]+)\\~([\\S&&[^;\\*]]+);");
 
 
         if (pairedEnd) {
-            p = Pattern.compile("\\S+_#(\\w+)_#(\\w+)");
+            p = Pattern.compile("\\S+_#(\\w+)_#(\\w+)_");
         }
 
         for (SAMRecord rec : it.loop()) {
@@ -786,12 +789,8 @@ public class BAMUtils {
             }
 
             if (!pairedEnd) {
-                rec = createRecFromUnmappable(rec, p, origGenome, mapGenome, toPlusStrand, pairedEnd);
+                rec = createRecFromUnmappable(rec, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd);
                 samWriter.addAlignment(rec);
-                readCounter++;
-                if (readCounter % Math.pow(10, 7) == 0) {
-                    System.out.println(readCounter + " reverted reads");
-                }
             } else {
                 if (!pairedReadMap.containsKey(rec.getReadName())) {
                     pairedReadMap.put(rec.getReadName(), new SAMRecord[2]);
@@ -807,41 +806,37 @@ public class BAMUtils {
                     throw new IllegalArgumentException("Read neither first of pair nor second of pair \n" + rec.getSAMString());
                 }
             }
+        }
 
-            for (Map.Entry<String, SAMRecord[]> entry : pairedReadMap.entrySet()) {
-                SAMRecord[] recs = entry.getValue();
-                if (recs == null) {
-                    continue;
-                }
+        for (Map.Entry<String, SAMRecord[]> entry : pairedReadMap.entrySet()) {
+            SAMRecord[] recs = entry.getValue();
+            if (recs == null) {
+                continue;
             }
+            SAMRecord rec1 = entry.getValue()[0];
+            SAMRecord rec2 = entry.getValue()[1];
+            if (rec1 != null) {
+                rec1 = createRecFromUnmappable(rec1, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd);
+            }
+            if (rec2 != null) {
+                rec2 = createRecFromUnmappable(rec2, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd);
+            }
+            completePairedReads(rec1, rec2);
 
-            for (Map.Entry<String, SAMRecord[]> entry : pairedReadMap.entrySet()) {
-                SAMRecord rec1 = entry.getValue()[0];
-                SAMRecord rec2 = entry.getValue()[1];
-                if (rec1 != null) {
-                    rec1 = createRecFromUnmappable(rec1, p, origGenome, mapGenome, toPlusStrand, pairedEnd);
-                }
-                if (rec2 != null) {
-                    rec2 = createRecFromUnmappable(rec2, p, origGenome, mapGenome, toPlusStrand, pairedEnd);
-                }
-                completePairedReads(rec1, rec2);
-
-                if (rec1 != null) {
-                    samWriter.addAlignment(rec1);
-                    readCounter++;
-                }
-                if (rec2 != null) {
-                    samWriter.addAlignment(rec2);
-                    readCounter++;
-                }
+            if (rec1 != null) {
+                samWriter.addAlignment(rec1);
+            }
+            if (rec2 != null) {
+                samWriter.addAlignment(rec2);
             }
         }
+
         samWriter.close();
 
         System.out.println("-noInduced:" + noInduced);
     }
 
-    public static SAMRecord createRecFromUnmappable(SAMRecord record, Pattern p, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand, boolean pairedEnd) {
+    public static SAMRecord createRecFromUnmappable(SAMRecord record, Pattern p, Pattern tagPattern, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand, boolean pairedEnd) {
         SAMRecord rec = record.deepCopy();
         try {
             Matcher m = p.matcher(rec.getReadName());
@@ -854,7 +849,17 @@ public class BAMUtils {
             } else if (rec.getSecondOfPairFlag()) {
                 readSequence = m.group(2);
             }
+            System.out.println("____");
+            System.out.println(readSequence);
+            System.out.println(rec.getBaseQualityString());
             rec.setReadString(readSequence);
+
+            Matcher tagMatcher = tagPattern.matcher(rec.getReadName());
+            while (tagMatcher.find()) {
+                System.out.println(tagMatcher.group(1) + " - " + tagMatcher.group(2));
+                rec.setAttribute(tagMatcher.group(1), tagMatcher.group(2));
+            }
+
 
             String[] inducedPos = inducedPositions(rec, origGenome, mapGenome, toPlusStrand);
             rec.setReadNegativeStrandFlag(inducedPos[1].equals("-"));
@@ -931,64 +936,6 @@ public class BAMUtils {
             e.printStackTrace();
         }
     }
-
-    public static void mergeBAMFilesInCIT(String bamFile1, String bamFile2, String prefix) {
-        SamReader reader1 = SamReaderFactory.makeDefault().open(new File(bamFile1));
-        SamReader reader2 = SamReaderFactory.makeDefault().open(new File(bamFile2));
-
-        ExtendedIterator<SAMRecord> it1 = EI.wrap(reader1.iterator());
-        ExtendedIterator<SAMRecord> it2 = EI.wrap(reader2.iterator());
-
-        try {
-            CenteredDiskIntervalTreeStorage<DefaultAlignedReadsData> out = new CenteredDiskIntervalTreeStorage<>(bamFile1.replace(".bam", "_merged.cit"), DefaultAlignedReadsData.class);
-            out.setMetaData(DynamicObject.from("conditions", DynamicObject.arrayOfObjects("name", prefix)));
-            IterateIntoSink<ImmutableReferenceGenomicRegion<DefaultAlignedReadsData>> sink = new IterateIntoSink<>(r -> out.fill(r));
-
-            for (SAMRecord rec : it1.loop()) {
-                try {
-                    if (rec.getReadUnmappedFlag()) {
-                        continue;
-                    }
-                    int[] cumNum = new int[1];
-                    cumNum[0] = 1;
-                    FactoryGenomicRegion fac = BamUtils.getFactoryGenomicRegion(rec, cumNum, false, false, null);
-                    fac.add(rec, 0);
-                    String strand = "+";
-                    if (rec.getReadNegativeStrandFlag()) {
-                        strand = "-";
-                    }
-                    ImmutableReferenceGenomicRegion reg = new ImmutableReferenceGenomicRegion(Chromosome.obtain(rec.getReferenceName() + strand), fac, fac.create());
-                    sink.put(reg);
-                } catch (SAMFormatException ex) {
-                    continue;
-                }
-            }
-
-            for (SAMRecord rec : it2.loop()) {
-                try {
-                    if (rec.getReadUnmappedFlag()) {
-                        continue;
-                    }
-                    int[] cumNum = new int[1];
-                    cumNum[0] = 1;
-                    FactoryGenomicRegion fac = BamUtils.getFactoryGenomicRegion(rec, cumNum, false, false, null);
-                    fac.add(rec, 0);
-                    String strand = "+";
-                    if (rec.getReadNegativeStrandFlag()) {
-                        strand = "-";
-                    }
-                    ImmutableReferenceGenomicRegion reg = new ImmutableReferenceGenomicRegion(Chromosome.obtain(rec.getReferenceName() + strand), fac, fac.create());
-                    sink.put(reg);
-                } catch (SAMFormatException ex) {
-                    continue;
-                }
-            }
-            sink.finish();
-        } catch (IOException | InterruptedException e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
 
 }
 

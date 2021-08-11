@@ -8,7 +8,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 import static gedi.javapipeline.createRescueBash.createRescueBash;
 
@@ -24,7 +23,8 @@ public class createRescuePipe extends GediProgram {
         addInput(params.tmp);
         addInput(params.files);
         addInput(params.slam);
-        addInput(params.pairedEnd);
+        addInput(params.k);
+        addInput(params.tags);
 
         addOutput(params.bashFile);
     }
@@ -40,7 +40,8 @@ public class createRescuePipe extends GediProgram {
         String tmpDir = getParameter(6);
         ArrayList<String> files = getParameters(7);
         boolean slam = getBooleanParameter(8);
-        boolean pairedEnd = getBooleanParameter(9);
+        boolean k = getBooleanParameter(9);
+        ArrayList<String> tags = getParameters(10);
 
         int threadCount = 1;
         int round = 0;
@@ -55,7 +56,7 @@ public class createRescuePipe extends GediProgram {
 
 
         for(String file : files){
-            String pathString = createRescueBash(writeAll, origGenome, pseudoGenome, file, pseudoStarIndex, tmpDir, getPrefix(file), pairedEnd);
+            String pathString = createRescueBash(writeAll, origGenome, pseudoGenome, file, pseudoStarIndex, tmpDir, getPrefix(file), tags);
             System.out.println("--" + getPrefix(file));
 
             writer.append("echo $( date +\"%F %T\" ) Starting " + getPrefix(file)+"\n");
@@ -87,6 +88,9 @@ public class createRescuePipe extends GediProgram {
         }
 
         writer.append("\n\n");
+        if(!k) {
+            writer.append("rm -r " + tmpDir + "\n\n");
+        }
         writer.append("STAR --genomeLoad Remove --genomeDir "+pseudoStarIndex+"\n\n");
 
         writer.append(mergeCommand+"\n");
