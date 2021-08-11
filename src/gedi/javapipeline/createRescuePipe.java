@@ -56,7 +56,7 @@ public class createRescuePipe extends GediProgram {
 
 
         for(String file : files){
-            String pathString = createRescueBash(writeAll, k, origGenome, pseudoGenome, file, pseudoStarIndex, tmpDir, getPrefix(file), tags);
+            String pathString = createRescueBash(writeAll, origGenome, pseudoGenome, file, pseudoStarIndex, tmpDir, getPrefix(file), tags);
             System.out.println("--" + getPrefix(file));
 
             writer.append("echo $( date +\"%F %T\" ) Starting " + getPrefix(file)+"\n");
@@ -88,6 +88,9 @@ public class createRescuePipe extends GediProgram {
         }
 
         writer.append("\n\n");
+        if(!k) {
+            writer.append("rm -r " + tmpDir + "\n\n");
+        }
         writer.append("STAR --genomeLoad Remove --genomeDir "+pseudoStarIndex+"\n\n");
 
         writer.append(mergeCommand+"\n");

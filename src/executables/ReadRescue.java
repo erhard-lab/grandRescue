@@ -14,7 +14,6 @@ public class ReadRescue {
         Gedi.startup(false);
 
         boolean writeAll = false;
-        boolean k = false;
 
         String origGenome = null;
         String pseudoGenome = null;
@@ -30,9 +29,6 @@ public class ReadRescue {
         for (i=0; i<args.length; i++) {
             if (args[i].equals("-all"))
                 writeAll = true;
-            else if (args[i].equals("-keep")) {
-                k = true;
-            }
             else if (args[i].equals("-genome")) {
                 ArrayList<String> gnames = new ArrayList<>();
                 i = checkMultiParam(args, ++i, gnames);
@@ -82,7 +78,7 @@ public class ReadRescue {
             System.exit(1);
         }
 
-        createRescueBash(writeAll, k, origGenome, pseudoGenome, origMapped, pseudoStarIndex, tmpDir, prefix, tags);
+        createRescueBash(writeAll, origGenome, pseudoGenome, origMapped, pseudoStarIndex, tmpDir, prefix, tags);
 
     }
 
