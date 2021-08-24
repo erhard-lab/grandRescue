@@ -760,11 +760,16 @@ public class BAMUtils {
     public static void samOutputFromPseudoMapping(String bamFile, String referenceBam, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand) {
         SamReader reader = SamReaderFactory.makeDefault().open(new File(bamFile));
         SAMRecordIterator pairedIT = reader.iterator();
+        SAMFileHeader header = SamReaderFactory.makeDefault().getFileHeader(new File(referenceBam));
+        SAMFileWriter samWriter = new SAMFileWriterFactory().makeBAMWriter(header, false, new File(bamFile.replace(".bam", "_reverted.bam")));
+        if(!pairedIT.hasNext()){
+            System.out.println("File " + bamFile + " has 0 reads");
+            samWriter.close();
+            return;
+        }
         boolean pairedEnd = pairedIT.next().getReadPairedFlag();
         pairedIT.close();
         ExtendedIterator<SAMRecord> it = EI.wrap(reader.iterator());
-        SAMFileHeader header = SamReaderFactory.makeDefault().getFileHeader(new File(referenceBam));
-        SAMFileWriter samWriter = new SAMFileWriterFactory().makeBAMWriter(header, false, new File(bamFile.replace(".bam", "_reverted.bam")));
         HashMap<String, SAMRecord[]> pairedReadMap = new HashMap<>();
         Pattern p = Pattern.compile("\\S+#(\\w+)_");
         Pattern tagPattern = Pattern.compile("\\*([\\S&&[^;\\*]]+)\\~([\\S&&[^;\\*]]+);");

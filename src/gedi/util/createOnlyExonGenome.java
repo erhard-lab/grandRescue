@@ -12,10 +12,11 @@ public class createOnlyExonGenome {
         try {
             String gtf = "/home/kevin/Desktop/PhD/gedi/Mismatch_Simulation/res/m.ens102/mus_musculus.102.gtf";
             String fasta = "/home/kevin/Desktop/PhD/gedi/Mismatch_Simulation/res/m.ens102/mus_musculus.102.fasta";
+            String outputPath = "";
 
-            fastaSeparator(new File(fasta));
-            createGenomeFiles(gtf, fasta, true);
-            System.out.println(getSeq(new File(fasta),"20", 145415, 145751));
+            fastaSeparator(new File(fasta), outputPath);
+            createGenomeFiles(gtf, fasta, outputPath,true);
+            System.out.println(getSeq(fasta,"20", 145415, 145751));
             //System.out.println(getSeq("20",13092, 13428, new File("/home/kevin/Desktop/PhD/gedi/Mismatch_Simulation/res/h.ens90/homo_sapiens.90_genes_corr_T2C.fasta")));
 
 
@@ -54,13 +55,14 @@ public class createOnlyExonGenome {
         return map;
     }
 
-    public static HashMap<String, String> fastaSeparator(File fasta) throws IOException{
-        HashMap<String, String> map = new HashMap<>();
+    public static void fastaSeparator(File fasta, String outPath) throws IOException{
         BufferedReader reader = new BufferedReader(new FileReader(fasta));
 
         String current = reader.readLine();
         String chrom = "";
         BufferedWriter writer = null;
+        outPath = outPath + fasta.getAbsolutePath().substring(fasta.getAbsolutePath().lastIndexOf("/"));
+
         while(current != null){
             if(current.startsWith(">")){
                 if(writer!=null){
@@ -72,7 +74,9 @@ public class createOnlyExonGenome {
                 chrom = m.group(1).replace(">","");
                 System.out.println(chrom);
 
-                writer = new BufferedWriter(new FileWriter(fasta.getPath().replace(".fasta", "_chrom_"+chrom+".fasta")));
+                File file = new File(outPath.replace(".fasta", "_chrom_"+chrom+".fasta.tmp"));
+                file.deleteOnExit();
+                writer = new BufferedWriter(new FileWriter(file));
                 current = reader.readLine();
                 continue;
             }
@@ -81,13 +85,11 @@ public class createOnlyExonGenome {
             current = reader.readLine();
         }
         writer.close();
-
-        return map;
     }
 
 
-    public static String getSeq(File fasta, String chrom, int startPos, int endPos) throws IOException{
-        BufferedReader reader = new BufferedReader(new FileReader(fasta.getPath().replace(".fasta", "_chrom_"+chrom+".fasta")));
+    public static String getSeq(String fastaPath, String chrom, int startPos, int endPos) throws IOException{
+        BufferedReader reader = new BufferedReader(new FileReader(fastaPath.replace(".fasta", "_chrom_"+chrom+".fasta.tmp")));
         reader.skip(startPos-1);
         String output = "";
         for(int i = 0; i < endPos-startPos+1; i++){
@@ -159,7 +161,7 @@ public class createOnlyExonGenome {
         writer.close();
     }
 
-    public static void createGenomeFiles(String gtfString, String fastaString, boolean toPlusStrand){
+    public static void createGenomeFiles(String gtfString, String fastaString, String outPath, boolean toPlusStrand){
 
         System.out.println("Starting to create Genome Files...");
 
@@ -170,16 +172,19 @@ public class createOnlyExonGenome {
 
         try {
             HashMap<String, ArrayList<String>> map = gtfSeparator(gtf);
-            String fastaPath = fasta.getPath().replace(".fasta", "_pseudo.fasta");
+            outPath = outPath + fasta.getAbsolutePath().substring(fasta.getAbsolutePath().lastIndexOf("/"));
+            String fastaPath = outPath.replace(".fasta", "_pseudo.fasta");
             BufferedWriter fastaWriter = new BufferedWriter(new FileWriter(fastaPath));
             BufferedWriter gtfWriter = new BufferedWriter(new FileWriter(fastaPath.replace(".fasta", ".gtf")));
             BufferedWriter indexWriter = new BufferedWriter(new FileWriter(fastaPath.replace(".fasta", ".index")));
+            System.out.println(fastaPath);
 
             gtfWriter.append(getGTFHeader(gtf));
             indexWriter.append("Gene\tpseudoPos\torigPos\n");
 
             System.out.println("GTF separated into chromosomal records...");
             System.out.println("Start writing FASTA & GTF-Files...");
+            int counter = 0;
             for(String key : map.keySet()){
                 fastaWriter.append(">"+key+"\n");
                 System.out.println("- Chromosome " + key);
@@ -190,8 +195,12 @@ public class createOnlyExonGenome {
 
                 ArrayList<String> records = map.get(key);
                 for(int i = 0; i < records.size(); i++){
+                    counter++;
+                    if(counter == 11){
+                        counter = 0;
+                        break;
+                    }
                     String rec = records.get(i);
-
                     //Groups:
                     //1 Chromosome                          4 startPos  7 strand (+,-,.)
                     //2 Source                              5 endPos    8 frame (0,1,2..)
@@ -216,7 +225,7 @@ public class createOnlyExonGenome {
                         lastGeneStart = Integer.valueOf(m.group(4));
 
                         lastGeneStartFasta = fastaPointer;
-                        String geneSeq = getSeq(fasta, key, Integer.valueOf(m.group(4)), Integer.valueOf(m.group(5)));
+                        String geneSeq = getSeq(outPath, key, Integer.valueOf(m.group(4)), Integer.valueOf(m.group(5)));
                         if(m.group(7).equals("-") && toPlusStrand){
                             geneSeq = SequenceUtils.getDnaReverseComplement(geneSeq);
                         }
@@ -248,6 +257,7 @@ public class createOnlyExonGenome {
 
 
                 }
+                System.out.println("____");
                 fastaWriter.append("\n");
 
             }
