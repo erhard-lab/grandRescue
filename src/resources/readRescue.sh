@@ -12,7 +12,7 @@ STAR --runMode alignReads --runThreadN 8   --genomeDir {pseudoStarIndex} --genom
 samtools view -b -F 256 Aligned.sortedByCoord.out.bam > {prefix}_pseudoMapped.bam
 
 
-gedi -e RescuePseudoReads -genome {genome} -pseudogenome {pseudogenome} -origmaps {prefix}_final.bam -pseudomaps {prefix}_pseudoMapped.bam -prefix {prefix} -pairedEnd
+gedi -e RescuePseudoReads -genome {genome} -pseudogenome {pseudogenome} -origmaps {prefix}_final.bam -pseudomaps {prefix}_pseudoMapped.bam -prefix {prefix}
 samtools merge {prefix}_rescued.bam {prefix}_final.bam {prefix}_pseudoMapped_reverted.bam
 samtools index {prefix}_rescued.bam
 gedi -e Bam2CIT {prefix}_rescued.cit {prefix}_rescued.bam
