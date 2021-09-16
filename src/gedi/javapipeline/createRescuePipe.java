@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import static gedi.javapipeline.createRescueBash.createRescueBash;
+import static gedi.javapipeline.createNo4sUBash.createNo4sUBash;
 
 public class createRescuePipe extends GediProgram {
 
@@ -56,11 +57,16 @@ public class createRescuePipe extends GediProgram {
 
 
         for(String file : files){
-            String pathString = createRescueBash(writeAll, origGenome, pseudoGenome, file, pseudoStarIndex, tmpDir, getPrefix(file), tags);
+            String pathString = "";
+            if(!file.contains("no4sU")) {
+                pathString = createRescueBash(writeAll, origGenome, pseudoGenome, file, pseudoStarIndex, tmpDir, getPrefix(file), tags);
+                mergeCommand = mergeCommand + " " + pathString.replace(".sh", "_rescued.cit");
+            } else {
+                pathString = createNo4sUBash(origGenome, file, tmpDir, getPrefix(file));
+                mergeCommand = mergeCommand + " " + pathString.replace(".sh", ".cit");
+            }
             System.out.println("--" + getPrefix(file));
-
-            writer.append("echo $( date +\"%F %T\" ) Starting " + getPrefix(file)+"\n");
-            mergeCommand = mergeCommand + " "+pathString.replace(".sh", "_rescued.cit");
+            writer.append("echo $( date +\"%F %T\" ) Starting " + getPrefix(file) + "\n");
             if(threadCount%threads != 0){
                 writer.append(pathString+" & \n");
                 writer.append("PIDS["+(threadCount+(round*threads))+"]=$!\n\n");
