@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.zip.GZIPOutputStream;
 
 public class ReadExtraction {
@@ -222,6 +223,22 @@ public class ReadExtraction {
 
     public static void extractUnmappedReadsToSAM(String file) {
         extractUnmappedReadsToSAM(new File(file));
+    }
+
+    public static void T2CFastq(String fastq){
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fastq.replace(".fastq", "_T2C.fastq")));
+            FunctorUtils.FixedBlockIterator<String, ArrayList<String>> it = EI.lines(fastq).block(4);
+            for(ArrayList<String> s : it.loop()){
+                writer.append(s.get(0)+"\n");
+                writer.append(s.get(1).replace("T", "C")+"\n");
+                writer.append(s.get(2)+"\n");
+                writer.append(s.get(3)+"\n");
+            }
+            writer.close();
+        }catch(IOException e){
+            e.printStackTrace();
+        }
     }
 
     private static void gzip(String file) {

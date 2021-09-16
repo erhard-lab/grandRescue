@@ -61,7 +61,7 @@ public class ExtractUnmappedReads {
 
     private static void usage() {
         System.out.println("\nA method to extract unmapped reads from a bam-file and convert all T's to C's for 4sU-read rescue via PseudoMapping. (Bam-files only contain unmapped reads if the STAR parameter outSAMmapped is set to Within)\n");
-        System.out.println("\nextractUnmappedReads [-all] [-c] [-tags] <input>\n\n -all Output fastq-files for mapped reads and non-T-to-C conversed reads too\n -c compress intermediate files from 'all' param to fastq.gz \n -tags BAM-File tags to keep");
+        System.out.println("\nextractUnmappedReads [-all] [-c] [-tags] [-f]\n\n -all Output fastq-files for mapped reads and non-T-to-C conversed reads too\n -c compress intermediate files from 'all' param to fastq.gz \n -tags BAM-File tags to keep\n -f Input bam-File");
     }
 
 
