@@ -11,6 +11,7 @@ import java.util.ArrayList;
 
 import static gedi.javapipeline.createRescueBash.createRescueBash;
 import static gedi.javapipeline.createNo4sUBash.createNo4sUBash;
+import static gedi.util.BAMUtils.getPrefix;
 
 public class createRescuePipe extends GediProgram {
 
@@ -110,7 +111,5 @@ public class createRescuePipe extends GediProgram {
 
     }
 
-    public static String getPrefix(String path){
-        return path.substring(path.lastIndexOf("/")+1, path.lastIndexOf(".bam"));
-    }
+
 }

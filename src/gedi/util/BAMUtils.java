@@ -105,7 +105,7 @@ public class BAMUtils {
         return origRGR;
     }
 
-    public static void samOutputFromPseudoMapping(String bamFile, String referenceBam, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand) {
+    public static void samOutputFromPseudoMapping(String bamFile, String referenceBam, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand, boolean keepID) {
         SamReader reader = SamReaderFactory.makeDefault().open(new File(bamFile));
         SAMRecordIterator pairedIT = reader.iterator();
         SAMFileHeader header = SamReaderFactory.makeDefault().getFileHeader(new File(referenceBam));
@@ -142,7 +142,7 @@ public class BAMUtils {
             }
 
             if (!pairedEnd) {
-                rec = createRecFromUnmappable(rec, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd);
+                rec = createRecFromUnmappable(rec, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd, keepID);
                 samWriter.addAlignment(rec);
             } else {
                 if (!pairedReadMap.containsKey(rec.getReadName())) {
@@ -169,10 +169,10 @@ public class BAMUtils {
             SAMRecord rec1 = entry.getValue()[0];
             SAMRecord rec2 = entry.getValue()[1];
             if (rec1 != null) {
-                rec1 = createRecFromUnmappable(rec1, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd);
+                rec1 = createRecFromUnmappable(rec1, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd, keepID);
             }
             if (rec2 != null) {
-                rec2 = createRecFromUnmappable(rec2, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd);
+                rec2 = createRecFromUnmappable(rec2, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd, keepID);
             }
             completePairedReads(rec1, rec2);
 
@@ -185,11 +185,9 @@ public class BAMUtils {
         }
 
         samWriter.close();
-
-        System.out.println("-noInduced:" + noInduced);
     }
 
-    public static SAMRecord createRecFromUnmappable(SAMRecord record, Pattern p, Pattern tagPattern, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand, boolean pairedEnd) {
+    public static SAMRecord createRecFromUnmappable(SAMRecord record, Pattern p, Pattern tagPattern, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand, boolean pairedEnd, boolean keepID) {
         SAMRecord rec = record.deepCopy();
         try {
             Matcher m = p.matcher(rec.getReadName());
@@ -238,10 +236,15 @@ public class BAMUtils {
                 rec.setReadUnmappedFlag(true);
             }
 
+
         } catch (NullPointerException | IndexOutOfBoundsException | IllegalArgumentException e) {
             rec.setReadUnmappedFlag(true);
             noInduced++;
         }
+        if(!keepID) {
+            rec.setReadName(rec.getReadName().substring(0, rec.getReadName().indexOf("_")));
+        }
+
         return rec;
     }
 
@@ -285,6 +288,10 @@ public class BAMUtils {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static String getPrefix(String path){
+        return path.substring(path.lastIndexOf("/")+1, path.lastIndexOf(".bam"));
     }
 
 }

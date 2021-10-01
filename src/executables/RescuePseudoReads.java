@@ -2,22 +2,22 @@ package executables;
 
 import gedi.app.Gedi;
 import gedi.core.genomic.Genomic;
+import gedi.util.LogUtils;
 
 import java.util.ArrayList;
-
 import static gedi.util.BAMUtils.*;
 
 public class RescuePseudoReads {
 
 
     public static void main(String[] args) {
-        Gedi.startup(false);
+        Gedi.startup(false, LogUtils.LogMode.Normal,"readRescue");
 
         String origGenome = "";
         String pseudoGenome = "";
         String pseudoMapped = "";
         String origMapped = "";
-        String prefix = "";
+        boolean keepID = false;
         boolean mapToPlusStrand = true;
 
         int i;
@@ -42,10 +42,8 @@ public class RescuePseudoReads {
                 i = checkMultiParam(args, ++i, gnames);
                 origMapped = gnames.get(0);
             }
-            else if (args[i].equals("-prefix")) {
-                ArrayList<String> gnames = new ArrayList<>();
-                i = checkMultiParam(args, ++i, gnames);
-                prefix = gnames.get(0);
+            else if (args[i].equals("-keepID")) {
+                keepID = true;
             }
             else if(args[i].equals("-h")){
                 usage();
@@ -56,9 +54,8 @@ public class RescuePseudoReads {
         }
 
         System.out.println("Rescue pseudo-reads...");
-        samOutputFromPseudoMapping(pseudoMapped, origMapped, Genomic.get(origGenome), Genomic.get(pseudoGenome), mapToPlusStrand);
-        //mergeBAMFilesInCIT(pseudoMapped.replace(".bam", "_reverted.bam"), origMapped, prefix);
-        createMetadata(prefix);
+        samOutputFromPseudoMapping(pseudoMapped, origMapped, Genomic.get(origGenome), Genomic.get(pseudoGenome), mapToPlusStrand, keepID);
+        createMetadata(getPrefix(origMapped));
     }
 
     private static void usage() {

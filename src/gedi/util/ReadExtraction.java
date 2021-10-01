@@ -30,7 +30,7 @@ public class ReadExtraction {
         SAMRecordIterator pairedIT = reader.iterator();
         boolean pairedEnd = pairedIT.next().getReadPairedFlag();
         pairedIT.close();
-        ExtendedIterator<SAMRecord> it = EI.wrap(reader.iterator()).progress();
+        ExtendedIterator<SAMRecord> it = EI.wrap(reader.iterator());
         HashMap<String, SAMRecord[]> pairedReadMap = new HashMap<>();
 
         try {

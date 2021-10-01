@@ -1,6 +1,8 @@
 package executables;
 
 import gedi.app.Gedi;
+import gedi.util.LogUtils;
+
 import java.util.ArrayList;
 
 import static gedi.util.ReadExtraction.extractUnmappedReadsToFastq;
@@ -9,7 +11,7 @@ import static gedi.util.ReadExtraction.extractUnmappedReadsToFastq;
 public class ExtractUnmappedReads {
 
     public static void main(String[] args) {
-        Gedi.startup(false);
+        Gedi.startup(false, LogUtils.LogMode.Normal,"readRescue");
 
         boolean writeAll = false;
         boolean compress = false;
