@@ -1,5 +1,6 @@
 package gedi.util;
 
+import gedi.core.reference.Strandness;
 import gedi.util.functions.EI;
 import gedi.util.functions.ExtendedIterator;
 import htsjdk.samtools.SAMRecord;
@@ -8,12 +9,9 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.zip.GZIPOutputStream;
 
 public class ReadExtraction {
@@ -24,7 +22,7 @@ public class ReadExtraction {
      *             Saves the original read sequence (with T->C MM's from 4su labeling) in ReadID, then changes all T's to C's in Read Sequence.
      *             These reads can then be mapped to the pseudo-genome where all T's to C's are converted.
      */
-    public static void extractUnmappedReadsToFastq(File file, boolean writeAll, boolean compress, ArrayList<String> tags) {
+    public static void extractUnmappedReadsToFastq(File file, ArrayList<String> tags, Strandness strandness) {
         System.out.println("Extracting unmappable reads...");
         SamReader reader = SamReaderFactory.makeDefault().open(file);
         SAMRecordIterator pairedIT = reader.iterator();
@@ -34,18 +32,10 @@ public class ReadExtraction {
         HashMap<String, SAMRecord[]> pairedReadMap = new HashMap<>();
 
         try {
-            String mappedPath = file.getPath().replace(".bam", "_mapped.fastq");
-            String unmappedPath = file.getPath().replace(".bam", "_unmapped.fastq");
             String unmappedT2CPath = file.getPath().replace(".bam", "_unmapped_T2C.fastq");
-
-
-            BufferedWriter mappedWriter = null;
-            BufferedWriter unmappedWriter = null;
             BufferedWriter unmappedT2CWriter = null;
 
             if (!pairedEnd) {
-                mappedWriter = new BufferedWriter(new FileWriter(mappedPath));
-                unmappedWriter = new BufferedWriter(new FileWriter(unmappedPath));
                 unmappedT2CWriter = new BufferedWriter(new FileWriter(unmappedT2CPath));
 
                 for (SAMRecord rec : it.loop()) {
@@ -69,19 +59,10 @@ public class ReadExtraction {
                     }
 
                     if (rec.getReadUnmappedFlag()) {
-                        unmappedWriter.append("@" + rec.getReadName() + "\n");
-                        unmappedWriter.append(seq + "\n");
-                        unmappedWriter.append("+\n");
-                        unmappedWriter.append(quality + "\n");
                         unmappedT2CWriter.append("@" + rec.getReadName() + "_#" + seq + tagsToAdd + "\n");
-                        unmappedT2CWriter.append(seq.replace("T", "C") + "\n");
+                        unmappedT2CWriter.append(convertNucleotides(seq, strandness, pairedEnd, true) + "\n");
                         unmappedT2CWriter.append("+\n");
                         unmappedT2CWriter.append(quality + "\n");
-                    } else {
-                        mappedWriter.append("@" + rec.getReadName() + "\n");
-                        mappedWriter.append(seq + "\n");
-                        mappedWriter.append("+\n");
-                        mappedWriter.append(quality + "\n");
                     }
                 }
             } else {
@@ -147,12 +128,14 @@ public class ReadExtraction {
                         }
                         tagsToAdd2 = tagsToAdd2 + "*" + s + "~" + val + ";";
                     }
+
+
                     unmappedT2CWriter.append("@" + rec1.getReadName() + "_#" + seq1 + "_#" + seq2 + tagsToAdd1 + "\n");
-                    unmappedT2CWriter.append(seq1.replace("T", "C") + "\n");
+                    unmappedT2CWriter.append(convertNucleotides(seq1, strandness, pairedEnd, true) + "\n");
                     unmappedT2CWriter.append("+\n");
                     unmappedT2CWriter.append(quality1 + "\n");
                     unmappedT2CWriter2.append("@" + rec2.getReadName() + "_#" + seq1 + "_#" + seq2 + tagsToAdd2 + "\n");
-                    unmappedT2CWriter2.append(seq2.replace("T", "C") + "\n");
+                    unmappedT2CWriter2.append(convertNucleotides(seq2, strandness, pairedEnd, false) + "\n");
                     unmappedT2CWriter2.append("+\n");
                     unmappedT2CWriter2.append(quality2 + "\n");
                 }
@@ -160,26 +143,14 @@ public class ReadExtraction {
                 unmappedT2CWriter2.close();
             }
 
-            if (!pairedEnd) {
-                mappedWriter.close();
-                unmappedWriter.close();
-            }
             unmappedT2CWriter.close();
-
-            if (!writeAll) {
-                Files.delete(Paths.get(mappedPath));
-                Files.delete(Paths.get(unmappedPath));
-            } else if (compress) {
-                gzip(mappedPath);
-                gzip(unmappedPath);
-            }
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
     }
 
-    public static void extractUnmappedReadsToFastq(String file, boolean writeAll, boolean compress, ArrayList<String> tags) {
-        extractUnmappedReadsToFastq(new File(file), writeAll, compress, tags);
+    public static void extractUnmappedReadsToFastq(String file, ArrayList<String> tags, Strandness strandness) {
+        extractUnmappedReadsToFastq(new File(file), tags, strandness);
     }
 
     /**
@@ -239,6 +210,46 @@ public class ReadExtraction {
         }catch(IOException e){
             e.printStackTrace();
         }
+    }
+
+    /**
+     *
+     * @param sequence Read Sequence
+     * @param strandness Sequencing protocol sense or antisense
+     * @param pairedEnd Paired End sequencing
+     * @param isFirst Is given Read the First of Pair (only for pairedEnd data)
+     * @return
+     */
+    private static String convertNucleotides(String sequence, Strandness strandness, boolean pairedEnd, boolean isFirst){
+        String out = sequence;
+
+        if(!pairedEnd){
+            if(strandness.equals(Strandness.Sense)){
+                out = out.replace("T", "C");
+            } else if(strandness.equals(Strandness.Antisense)){
+                out = out.replace("A", "G");
+            } else {
+                throw new IllegalArgumentException("Strandness must be Sense or Antisense");
+            }
+        } else {
+            if(strandness.equals(Strandness.Sense)){
+                if(isFirst) {
+                    out = out.replace("T", "C");
+                } else {
+                    out = out.replace("A", "G");
+                }
+            } else if(strandness.equals(Strandness.Antisense)){
+                if(isFirst) {
+                    out = out.replace("A", "G");
+                } else {
+                    out = out.replace("T", "C");
+                }
+            } else {
+                throw new IllegalArgumentException("Strandness must be Sense or Antisense");
+            }
+        }
+
+        return out;
     }
 
     private static void gzip(String file) {

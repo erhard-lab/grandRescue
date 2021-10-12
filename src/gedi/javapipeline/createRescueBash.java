@@ -1,6 +1,7 @@
 package gedi.javapipeline;
 
 import executables.Pipeline;
+import gedi.core.reference.Strandness;
 import gedi.util.FileUtils;
 import gedi.util.io.text.LineIterator;
 import java.io.File;
@@ -15,11 +16,13 @@ import java.util.ArrayList;
 public class createRescueBash {
 
 
-    public static String createRescueBash(boolean writeAll, String origGenome, String pseudoGenome, String origMapped, String pseudoStarIndex, String tmpDir, String prefix, ArrayList<String> tags) {
+    public static String createRescueBash(String origGenome, String pseudoGenome, String origMapped, String pseudoStarIndex, String tmpDir, String prefix, ArrayList<String> tags, Strandness strandness) {
         String pathString = Paths.get(prefix+".sh").toAbsolutePath().toString();
         try {
             Charset charset = StandardCharsets.UTF_8;
             String name = "readRescue.sh";
+
+
             String tagnames = "";
             if(!tags.isEmpty()){
                 tagnames = "-tags";
@@ -38,9 +41,6 @@ public class createRescueBash {
                 file = FileUtils.readAllText(new File(name));
             }
 
-            if(!writeAll){
-                file = file.replace("-all", "");
-            }
             file = file.replaceAll("\\{tmp}", tmpDir);
             file = file.replaceAll("\\{bampath}", origMapped);
             file = file.replaceAll("\\{pseudoStarIndex}", pseudoStarIndex);
@@ -49,6 +49,7 @@ public class createRescueBash {
             file = file.replaceAll("\\{files}", prefix+"_unmapped_T2C.fastq");
             file = file.replaceAll("\\{prefix}", prefix);
             file = file.replaceAll("\\{tags}", tagnames);
+            file = file.replaceAll("\\{strandness}", strandness.name());
 
 
 

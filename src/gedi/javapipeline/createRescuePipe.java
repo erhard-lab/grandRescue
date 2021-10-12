@@ -1,5 +1,6 @@
 package gedi.javapipeline;
 
+import gedi.core.reference.Strandness;
 import gedi.util.program.GediProgram;
 import gedi.util.program.GediProgramContext;
 
@@ -20,13 +21,13 @@ public class createRescuePipe extends GediProgram {
         addInput(params.genome);
         addInput(params.pseudogenome);
         addInput(params.prefix);
-        addInput(params.all);
         addInput(params.pseudoSTAR);
         addInput(params.tmp);
         addInput(params.files);
         addInput(params.slam);
         addInput(params.k);
         addInput(params.tags);
+        addInput(params.strandness);
 
         addOutput(params.bashFile);
     }
@@ -37,13 +38,13 @@ public class createRescuePipe extends GediProgram {
         String origGenome = getParameter(1);
         String pseudoGenome = getParameter(2);
         String prefix = getParameter(3);
-        boolean writeAll = getBooleanParameter(4);
-        String pseudoStarIndex = getParameter(5);
-        String tmpDir = getParameter(6);
-        ArrayList<String> files = getParameters(7);
-        boolean slam = getBooleanParameter(8);
-        boolean k = getBooleanParameter(9);
-        ArrayList<String> tags = getParameters(10);
+        String pseudoStarIndex = getParameter(4);
+        String tmpDir = getParameter(5);
+        ArrayList<String> files = getParameters(6);
+        boolean slam = getBooleanParameter(7);
+        boolean k = getBooleanParameter(8);
+        ArrayList<String> tags = getParameters(9);
+        Strandness strandness = getParameter(10);
 
         int threadCount = 1;
         int round = 0;
@@ -60,7 +61,7 @@ public class createRescuePipe extends GediProgram {
         for(String file : files){
             String pathString = "";
             if(!file.contains("no4sU")) {
-                pathString = createRescueBash(writeAll, origGenome, pseudoGenome, file, pseudoStarIndex, tmpDir, getPrefix(file), tags);
+                pathString = createRescueBash(origGenome, pseudoGenome, file, pseudoStarIndex, tmpDir, getPrefix(file), tags, strandness);
                 mergeCommand = mergeCommand + " " + pathString.replace(".sh", "_rescued.cit");
             } else {
                 pathString = createNo4sUBash(origGenome, file, tmpDir, getPrefix(file));
@@ -102,7 +103,7 @@ public class createRescuePipe extends GediProgram {
 
         writer.append(mergeCommand+"\n");
         if(slam) {
-            writer.append("gedi -t . -e Slam -nthreads " + threads + " -trim5p 15 -genomic " + origGenome + " -prefix grandslam_t15/" + prefix + " -reads " + prefix+"_rescued.cit -plot -D\n\n");
+            writer.append("gedi -t . -e Slam -nthreads 10" + " -trim5p 15 -genomic " + origGenome + " -prefix grandslam_t15/" + prefix + " -reads " + prefix+"_rescued.cit -modelall -plot -D\n\n");
         }
         writer.close();
         bash.setExecutable(true);

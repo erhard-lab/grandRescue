@@ -6,6 +6,7 @@ import gedi.core.data.annotation.Transcript;
 import gedi.core.data.reads.DefaultAlignedReadsData;
 import gedi.core.genomic.Genomic;
 import gedi.core.reference.Chromosome;
+import gedi.core.reference.Strandness;
 import gedi.core.region.ArrayGenomicRegion;
 import gedi.core.region.GenomicRegion;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
@@ -28,19 +29,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static gedi.util.SequenceUtil.calculateMdAndNmTags;
+import static gedi.util.SequenceUtil.reverseComplement;
 
 public class BAMUtils {
 
     static int noInduced = 0;
 
-    public static String[] inducedPositions(SAMRecord rec, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand) {
+    public static String[] inducedPositions(SAMRecord rec, Genomic origGenome, Genomic mapGenome) {
         String[] inducedPositions = new String[3];
-        String mapStrand = "+";
-        if (!toPlusStrand && rec.getReadNegativeStrandFlag()) {
-            mapStrand = "-";
-        }
 
-        Chromosome mapChromosome = Chromosome.obtain("" + rec.getReferenceName() + mapStrand);
+        Chromosome mapChromosome = Chromosome.obtain("" + rec.getReferenceName() + "+");
         GenomicRegion mappedRegion = new ArrayGenomicRegion(rec.getAlignmentStart() - 1, rec.getAlignmentEnd());
         ExtendedIterator<ImmutableReferenceGenomicRegion<String>> mappedEI = mapGenome.getGenes().ei(mapChromosome, mappedRegion);
 
@@ -55,15 +53,30 @@ public class BAMUtils {
         ReferenceGenomicRegion origRGR = origGeneMapFunc.apply(mapGene);
         ReferenceGenomicRegion mapRGR = mapGeneMapFunc.apply(mapGene);
 
-        int inducedStart = origRGR.map(mapRGR.induce(rec.getAlignmentStart() - 1));
-        if (origRGR.toString().contains("-:")) {
+        int inducedStart = -1;
+
+        if (origRGR.getReference().isMinus()) {
             inducedStart = origRGR.map(mapRGR.induce(rec.getAlignmentEnd() - 1));
+            Cigar newCig = new Cigar();
+            Cigar oldCig = rec.getCigar();
+            for (int i = oldCig.numCigarElements() - 1; i >= 0; i--) {
+                newCig.add(oldCig.getCigarElement(i));
+            }
+            rec.setCigar(newCig);
+
+            rec.setReadNegativeStrandFlag(!rec.getReadNegativeStrandFlag());
+            if(rec.getReadPairedFlag()) {
+                rec.setMateNegativeStrandFlag(!rec.getMateNegativeStrandFlag());
+            }
+
+        } else {
+            inducedStart = origRGR.map(mapRGR.induce(rec.getAlignmentStart() - 1));
         }
 
         inducedPositions[0] = origRGR.getReference().getName();
 
         inducedPositions[1] = "+";
-        if (origRGR.getReference().isMinus()) {
+        if (rec.getReadNegativeStrandFlag()) {
             inducedPositions[1] = "-";
         }
 
@@ -105,12 +118,12 @@ public class BAMUtils {
         return origRGR;
     }
 
-    public static void samOutputFromPseudoMapping(String bamFile, String referenceBam, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand, boolean keepID) {
+    public static void samOutputFromPseudoMapping(String bamFile, String referenceBam, Genomic origGenome, Genomic mapGenome, boolean keepID, Strandness strandness, int maxMM) {
         SamReader reader = SamReaderFactory.makeDefault().open(new File(bamFile));
         SAMRecordIterator pairedIT = reader.iterator();
         SAMFileHeader header = SamReaderFactory.makeDefault().getFileHeader(new File(referenceBam));
         SAMFileWriter samWriter = new SAMFileWriterFactory().makeBAMWriter(header, false, new File(bamFile.replace(".bam", "_reverted.bam")));
-        if(!pairedIT.hasNext()){
+        if (!pairedIT.hasNext()) {
             System.out.println("File " + bamFile + " has 0 reads");
             samWriter.close();
             return;
@@ -128,7 +141,7 @@ public class BAMUtils {
         }
 
         for (SAMRecord rec : it.loop()) {
-            if (!pairedEnd && toPlusStrand && rec.getReadNegativeStrandFlag()) {
+            if (!pairedEnd && !strandness.equals(Strandness.Antisense) && rec.getReadNegativeStrandFlag()) {
                 continue;
             }
             if (rec.getStringAttribute("MD").contains("N")) {
@@ -141,8 +154,9 @@ public class BAMUtils {
                 continue;
             }
 
+
             if (!pairedEnd) {
-                rec = createRecFromUnmappable(rec, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd, keepID);
+                rec = createRecFromUnmappable(rec, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM);
                 samWriter.addAlignment(rec);
             } else {
                 if (!pairedReadMap.containsKey(rec.getReadName())) {
@@ -169,10 +183,10 @@ public class BAMUtils {
             SAMRecord rec1 = entry.getValue()[0];
             SAMRecord rec2 = entry.getValue()[1];
             if (rec1 != null) {
-                rec1 = createRecFromUnmappable(rec1, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd, keepID);
+                rec1 = createRecFromUnmappable(rec1, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM);
             }
             if (rec2 != null) {
-                rec2 = createRecFromUnmappable(rec2, p, tagPattern, origGenome, mapGenome, toPlusStrand, pairedEnd, keepID);
+                rec2 = createRecFromUnmappable(rec2, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM);
             }
             completePairedReads(rec1, rec2);
 
@@ -187,8 +201,12 @@ public class BAMUtils {
         samWriter.close();
     }
 
-    public static SAMRecord createRecFromUnmappable(SAMRecord record, Pattern p, Pattern tagPattern, Genomic origGenome, Genomic mapGenome, boolean toPlusStrand, boolean pairedEnd, boolean keepID) {
+    public static SAMRecord createRecFromUnmappable(SAMRecord record, Pattern p, Pattern tagPattern, Genomic origGenome, Genomic mapGenome, boolean pairedEnd, boolean keepID, int maxMM) {
         SAMRecord rec = record.deepCopy();
+
+        if(maxMM == 100){
+            maxMM = (int) (rec.getReadString().length() * 0.75);
+        }
         try {
             Matcher m = p.matcher(rec.getReadName());
             m.find();
@@ -204,44 +222,37 @@ public class BAMUtils {
 
             Matcher tagMatcher = tagPattern.matcher(rec.getReadName());
             while (tagMatcher.find()) {
-                System.out.println(tagMatcher.group(1) + " - " + tagMatcher.group(2));
                 rec.setAttribute(tagMatcher.group(1), tagMatcher.group(2));
             }
 
 
-            String[] inducedPos = inducedPositions(rec, origGenome, mapGenome, toPlusStrand);
+            String[] inducedPos = inducedPositions(rec, origGenome, mapGenome);
             rec.setReadNegativeStrandFlag(inducedPos[1].equals("-"));
             rec.setAlignmentStart(Integer.valueOf(inducedPos[2]) + 1);
             rec.setReferenceName(inducedPos[0]);
-            String origSequence = origGenome.getSequence(Chromosome.obtain(inducedPos[0] + inducedPos[1]), BamUtils.getArrayGenomicRegion(rec)).toString();
+            String origSequence = origGenome.getSequence(Chromosome.obtain(inducedPos[0] + "+"), BamUtils.getArrayGenomicRegion(rec)).toString();
 
             if (rec.getReadNegativeStrandFlag()) {
-                origSequence = SequenceUtils.getDnaReverseComplement(origSequence);
-                rec.setReadString(SequenceUtils.getDnaReverseComplement(readSequence));
-                Cigar newCig = new Cigar();
-                Cigar oldCig = rec.getCigar();
-                for (int i = oldCig.numCigarElements() - 1; i >= 0; i--) {
-                    newCig.add(oldCig.getCigarElement(i));
-                }
-                rec.setCigar(newCig);
+                rec.setReadString(reverseComplement(rec.getReadString()));
             }
+
+            rec.setAttribute("nM", null);
+            rec.setAttribute("NM", null);
 
             calculateMdAndNmTags(rec, origSequence.getBytes(StandardCharsets.UTF_8), rec.getAlignmentStart() - 1, true, true);
-            //Remove reads with more than a certain amount of MM regarding readlength
-            if (rec.getIntegerAttribute("NM") > rec.getReadString().length() * 0.75) {
-                rec.setReadUnmappedFlag(true);
-            }
-            //Put negative strand read to unmapped, when its mate is already on negative strand
-            if (pairedEnd && rec.getReadNegativeStrandFlag() && rec.getMateNegativeStrandFlag()) {
-                rec.setReadUnmappedFlag(true);
-            }
 
+
+            //Remove reads with more than a certain amount of MM regarding readlength
+            if (rec.getIntegerAttribute("NM") > maxMM) {
+                rec.setReadUnmappedFlag(true);
+            }
 
         } catch (NullPointerException | IndexOutOfBoundsException | IllegalArgumentException e) {
+            e.printStackTrace();
             rec.setReadUnmappedFlag(true);
             noInduced++;
         }
-        if(!keepID) {
+        if (!keepID) {
             rec.setReadName(rec.getReadName().substring(0, rec.getReadName().indexOf("_")));
         }
 
@@ -290,8 +301,8 @@ public class BAMUtils {
         }
     }
 
-    public static String getPrefix(String path){
-        return path.substring(path.lastIndexOf("/")+1, path.lastIndexOf(".bam"));
+    public static String getPrefix(String path) {
+        return path.substring(path.lastIndexOf("/") + 1, path.lastIndexOf(".bam"));
     }
 
 }

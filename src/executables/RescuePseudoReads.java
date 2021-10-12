@@ -2,6 +2,7 @@ package executables;
 
 import gedi.app.Gedi;
 import gedi.core.genomic.Genomic;
+import gedi.core.reference.Strandness;
 import gedi.util.LogUtils;
 
 import java.util.ArrayList;
@@ -17,8 +18,9 @@ public class RescuePseudoReads {
         String pseudoGenome = "";
         String pseudoMapped = "";
         String origMapped = "";
+        int maxMM = 100;
         boolean keepID = false;
-        boolean mapToPlusStrand = true;
+        Strandness strandness = Strandness.Sense;
 
         int i;
         for (i=0; i<args.length; i++) {
@@ -42,6 +44,23 @@ public class RescuePseudoReads {
                 i = checkMultiParam(args, ++i, gnames);
                 origMapped = gnames.get(0);
             }
+            else if(args[i].equals("-maxMM")){
+                ArrayList<String> mm = new ArrayList<>();
+                i = checkMultiParam(args, ++i, mm);
+                maxMM = Integer.valueOf(mm.get(0));
+            }
+            else if(args[i].equals("-strandness")){
+                ArrayList<String> strand = new ArrayList<>();
+                i = checkMultiParam(args, ++i, strand);
+                if(strand.get(0).equals("Sense")){
+                    strandness = Strandness.Sense;
+                } else if(strand.get(0).equals("Antisense")){
+                    strandness = Strandness.Antisense;
+                } else {
+                    usage();
+                    break;
+                }
+            }
             else if (args[i].equals("-keepID")) {
                 keepID = true;
             }
@@ -54,13 +73,13 @@ public class RescuePseudoReads {
         }
 
         System.out.println("Rescue pseudo-reads...");
-        samOutputFromPseudoMapping(pseudoMapped, origMapped, Genomic.get(origGenome), Genomic.get(pseudoGenome), mapToPlusStrand, keepID);
+        samOutputFromPseudoMapping(pseudoMapped, origMapped, Genomic.get(origGenome), Genomic.get(pseudoGenome), keepID, strandness, maxMM);
         createMetadata(getPrefix(origMapped));
     }
 
     private static void usage() {
         System.out.println("\nInduces the positions of reads mapped to pseudo genome in the original genome and merges these rescued reads with the original bam-files. The output is a bam-file with originally mapped reads and rescued reads.\n");
-        System.out.println("\nrescuePseudoReads [-genome] [-pseudogenome] [-pseudomaps] [-origmaps]\n\n -genome The gedi indexed genome (e.g. h.ens90, m.ens90...) \n -pseudogenome The gedi indexed pseudo genome of the original genome\n -origmaps the original bam-file with all mapped reads \n -pseudomaps bam-file of reads mapped to pseudo genome\n\n");
+        System.out.println("\nrescuePseudoReads [-genome] [-pseudogenome] [-pseudomaps] [-origmaps] [-strandness] [-maxMM]\n\n -genome The gedi indexed genome (e.g. h.ens90, m.ens90...) \n -pseudogenome The gedi indexed pseudo genome of the original genome\n -origmaps the original bam-file with all mapped reads \n -pseudomaps bam-file of reads mapped to pseudo genome\n -strandness Sense or Antisense\n -maxMM Maximum number of Mismatches allowed \n\n");
     }
 
     private static int checkMultiParam(String[] args, int index, ArrayList<String> re) {

@@ -2,6 +2,7 @@ package executables;
 
 import gedi.app.Gedi;
 import gedi.core.genomic.Genomic;
+import gedi.core.reference.Strandness;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ public class ReadRescue {
         String pseudoStarIndex = "";
         String tmpDir = Paths.get("").toString()+"tmp";
         String prefix = "";
+        Strandness strandness = Strandness.Sense;
         ArrayList<String> tags = new ArrayList<>();
 
 
@@ -63,7 +65,20 @@ public class ReadRescue {
                 ArrayList<String> tagnames = new ArrayList<>();
                 i = checkMultiParam(args, ++i, tagnames);
                 tags.addAll(tagnames);
-            }else if(args[i].equals("-h")){
+            }
+            else if(args[i].equals("-strandness")){
+                ArrayList<String> strand = new ArrayList<>();
+                i = checkMultiParam(args, ++i, strand);
+                if(strand.get(0).equals("Sense")){
+                    strandness = Strandness.Sense;
+                } else if(strand.get(0).equals("Antisense")){
+                    strandness = Strandness.Antisense;
+                } else {
+                    usage();
+                    break;
+                }
+            }
+            else if(args[i].equals("-h")){
                 usage();
                 return;
             }
@@ -78,7 +93,7 @@ public class ReadRescue {
             System.exit(1);
         }
 
-        createRescueBash(writeAll, origGenome, pseudoGenome, origMapped, pseudoStarIndex, tmpDir, prefix, tags);
+        createRescueBash(origGenome, pseudoGenome, origMapped, pseudoStarIndex, tmpDir, prefix, tags, strandness);
 
     }
 
