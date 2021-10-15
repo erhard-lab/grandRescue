@@ -3,6 +3,7 @@ package executables;
 import gedi.app.Gedi;
 import gedi.core.genomic.Genomic;
 import gedi.core.reference.Strandness;
+import gedi.util.LogUtils;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -12,7 +13,7 @@ import static gedi.javapipeline.createRescueBash.createRescueBash;
 public class ReadRescue {
 
     public static void main(String[] args) {
-        Gedi.startup(false);
+        Gedi.startup(false, LogUtils.LogMode.Normal, "readRescue");
 
         boolean writeAll = false;
 

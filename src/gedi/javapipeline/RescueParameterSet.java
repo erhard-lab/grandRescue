@@ -2,6 +2,7 @@ package gedi.javapipeline;
 
 import gedi.core.genomic.Genomic;
 import gedi.core.reference.Strandness;
+import gedi.RescueReads;
 import gedi.util.program.GediParameter;
 import gedi.util.program.GediParameterSet;
 import gedi.util.program.parametertypes.*;
@@ -9,23 +10,14 @@ import gedi.util.program.parametertypes.*;
 import java.io.File;
 
 public class RescueParameterSet extends GediParameterSet {
-
-    public GediParameter<File> paramFile = new GediParameter<File>(this,"${prefix}.param", "File containing the parameters used to call this program", false, new FileParameterType());
-
-    public GediParameter<Integer> nthreads = new GediParameter<Integer>(this,"nthreads", "The number of threads to use for computations", false, new IntParameterType(), Runtime.getRuntime().availableProcessors());
-    public GediParameter<String> genome = new GediParameter<String>(this,"genome", "The indexed GEDI genome.", false, new StringParameterType());
-    public GediParameter<String> pseudogenome = new GediParameter<String>(this,"pseudogenome", "The indexed GEDI pseudo-genome.", false, new StringParameterType());
-    public GediParameter<String> prefix = new GediParameter<String>(this,"prefix", "The prefix used for all output files", false, new StringParameterType());
-    public GediParameter<Boolean> k = new GediParameter<Boolean>(this,"k", "Keep temporary files after run", false, new BooleanParameterType(), true);
-    public GediParameter<Boolean> slam = new GediParameter<Boolean>(this,"slam", "Run grandslam on final dataset", false, new BooleanParameterType(), true);
-    public GediParameter<String> pseudoSTAR = new GediParameter<String>(this,"pseudoSTAR", "The path to the STAR index of the pseudo genome", false, new StringParameterType());
-    public GediParameter<String> tmp = new GediParameter<String>(this,"tmp", "The path for temporary files to be placed", false, new StringParameterType());
-    public GediParameter<String> files = new GediParameter<String>(this,"files", "The paths to the mapped 4sU-experiment bam files", true, new StringParameterType());
-    public GediParameter<String> tags = new GediParameter<String>(this,"tags", "BAM-File tags to keep", true, new StringParameterType(), true);
-    public GediParameter<Strandness> strandness = new GediParameter<Strandness>(this,"strandness", "Whether sequencing protocol was stranded (Sensse), strand unspecific (Unspecific), or opposite strand (Antisense).", false, new EnumParameterType<>(Strandness.class), Strandness.Sense,true);
-
-    public GediParameter<File> bashFile = new GediParameter<File>(this,"${prefix}.sh", "Final bash file", false, new FileParameterType());
-
-
-
+    public GediParameter<Genomic> genome = new GediParameter<Genomic>(this,"genome", "The indexed GEDI genome.", false, new GenomicParameterType());
+    public GediParameter<Genomic> pseudogenome = new GediParameter<Genomic>(this,"pseudogenome", "The indexed GEDI pseudogenome.", false, new GenomicParameterType());
+    public GediParameter<String> origmaps = new GediParameter<String>(this,"origmaps", "The original STAR-mapped bam-file", false, new StringParameterType());
+    public GediParameter<String> pseudomaps = new GediParameter<String>(this,"pseudomaps", "The bam-file mapped to pseudogenome", false, new StringParameterType());
+    public GediParameter<Integer> maxMM = new GediParameter<Integer>(this,"maxMM", "The maximum number of mismatches allowed after rescue", false, new IntParameterType(), 100, true);
+    public GediParameter<Strandness> strandness = new GediParameter<Strandness>(this,"strandness", "Whether sequencing protocol was stranded (Sensse) or opposite strand (Antisense).", false, new EnumParameterType<>(Strandness.class), Strandness.Sense,true);
+    public GediParameter<Boolean> keepID = new GediParameter<Boolean>(this,"keepID", "Keep modified read ID from rescue procedure", false, new BooleanParameterType(), false, true);
+    //public GediParameter<String> prefix = new GediParameter<String>(this,"pseudomaps", "The bam-file mapped to pseudogenome", false, new StringParameterType(),  RescueReads.getPrefix(origmaps.toString()), true);
+    public GediParameter<File> outFile = new GediParameter<File>(this,"rescued.bam", "BAM-file containing all originally mapped reads and rescued reads", false, new FileParameterType());
+    //public GediParameter<File> paramFile = new GediParameter<File>(this,"${prefix}.param", "File containing the parameters used to call PRICE", false, new FileParameterType());
 }

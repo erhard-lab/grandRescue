@@ -1,19 +1,18 @@
 package executables;
 
 import gedi.app.Gedi;
-import gedi.javapipeline.RescueParameterSet;
+import gedi.javapipeline.RescuePipeParameterSet;
 import gedi.javapipeline.createRescuePipe;
 import gedi.util.LogUtils;
 import gedi.util.program.CommandLineHandler;
 import gedi.util.program.GediProgram;
-import java.util.ArrayList;
 
 public class ReadRescuePipe {
 
     public static void main(String[] args) {
-        Gedi.startup(true, LogUtils.LogMode.Normal,"Read-Rescue Pipeline");
+        Gedi.startup(false, LogUtils.LogMode.Normal,"readRescue");
 
-        RescueParameterSet params = new RescueParameterSet();
+        RescuePipeParameterSet params = new RescuePipeParameterSet();
         GediProgram pipeline = GediProgram.create("ReadRescue-Pipe", new createRescuePipe(params));
         GediProgram.run(pipeline, params.paramFile, new CommandLineHandler("ReadRescuePipe", "Rescue unmappable 4sU reads", args));
     }

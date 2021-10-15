@@ -12,11 +12,11 @@ import java.util.ArrayList;
 
 import static gedi.javapipeline.createRescueBash.createRescueBash;
 import static gedi.javapipeline.createNo4sUBash.createNo4sUBash;
-import static gedi.util.BAMUtils.getPrefix;
+import static gedi.RescueReads.getPrefix;
 
 public class createRescuePipe extends GediProgram {
 
-    public createRescuePipe(RescueParameterSet params) {
+    public createRescuePipe(RescuePipeParameterSet params) {
         addInput(params.nthreads);
         addInput(params.genome);
         addInput(params.pseudogenome);

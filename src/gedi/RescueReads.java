@@ -1,4 +1,4 @@
-package gedi.util;
+package gedi;
 
 import gedi.bam.tools.BamUtils;
 import gedi.centeredDiskIntervalTree.CenteredDiskIntervalTreeStorage;
@@ -11,11 +11,14 @@ import gedi.core.region.ArrayGenomicRegion;
 import gedi.core.region.GenomicRegion;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.core.region.ReferenceGenomicRegion;
+import gedi.javapipeline.RescueParameterSet;
 import gedi.region.bam.FactoryGenomicRegion;
 import gedi.util.dynamic.DynamicObject;
 import gedi.util.functions.EI;
 import gedi.util.functions.ExtendedIterator;
 import gedi.util.functions.IterateIntoSink;
+import gedi.util.program.GediProgram;
+import gedi.util.program.GediProgramContext;
 import htsjdk.samtools.*;
 
 import java.io.BufferedWriter;
@@ -31,9 +34,38 @@ import java.util.regex.Pattern;
 import static gedi.util.SequenceUtil.calculateMdAndNmTags;
 import static gedi.util.SequenceUtil.reverseComplement;
 
-public class BAMUtils {
+public class RescueReads extends GediProgram {
 
     static int noInduced = 0;
+
+
+    public RescueReads(RescueParameterSet params){
+        addInput(params.genome);
+        addInput(params.pseudogenome);
+        addInput(params.origmaps);
+        addInput(params.pseudomaps);
+        addInput(params.maxMM);
+        addInput(params.strandness);
+        addInput(params.keepID);
+
+        addOutput(params.outFile);
+    }
+
+    @Override
+    public String execute(GediProgramContext context) throws Exception {
+        Genomic genome = getParameter(0);
+        Genomic pseudogenome = getParameter(1);
+        String origmaps = getParameter(2);
+        String pseudomaps = getParameter(3);
+        int maxMM = getIntParameter(4);
+        Strandness strandness = getParameter(5);
+        boolean keepID = getBooleanParameter(6);
+
+        samOutputFromPseudoMapping(pseudomaps, origmaps, genome, pseudogenome, keepID, strandness, maxMM);
+        createMetadata(getPrefix(origmaps));
+
+        return null;
+    }
 
     public static String[] inducedPositions(SAMRecord rec, Genomic origGenome, Genomic mapGenome) {
         String[] inducedPositions = new String[3];
@@ -248,7 +280,6 @@ public class BAMUtils {
             }
 
         } catch (NullPointerException | IndexOutOfBoundsException | IllegalArgumentException e) {
-            e.printStackTrace();
             rec.setReadUnmappedFlag(true);
             noInduced++;
         }
