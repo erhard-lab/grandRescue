@@ -13,7 +13,7 @@ public class RescuePipeParameterSet extends GediParameterSet {
     public GediParameter<File> paramFile = new GediParameter<File>(this,"${prefix}.param", "File containing the parameters used to call this program", false, new FileParameterType());
 
     public GediParameter<Integer> nthreads = new GediParameter<Integer>(this,"nthreads", "The number of threads to use for computations", false, new IntParameterType(), Runtime.getRuntime().availableProcessors());
-    public GediParameter<String> genome = new GediParameter<String>(this,"genome", "The indexed GEDI genome.", false, new StringParameterType());
+    public GediParameter<String> genome = new GediParameter<String>(this,"genome", "The indexed GEDI genome.", true, new StringParameterType());
     public GediParameter<String> pseudogenome = new GediParameter<String>(this,"pseudogenome", "The indexed GEDI pseudo-genome.", false, new StringParameterType());
     public GediParameter<String> prefix = new GediParameter<String>(this,"prefix", "The prefix used for all output files", false, new StringParameterType());
     public GediParameter<Boolean> k = new GediParameter<Boolean>(this,"k", "Keep temporary files after run", false, new BooleanParameterType(), true);

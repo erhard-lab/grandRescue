@@ -21,10 +21,7 @@ import gedi.util.program.GediProgram;
 import gedi.util.program.GediProgramContext;
 import htsjdk.samtools.*;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
@@ -37,6 +34,7 @@ import static gedi.util.SequenceUtil.reverseComplement;
 public class RescueReads extends GediProgram {
 
     static int noInduced = 0;
+    static int nullPointer = 0;
 
 
     public RescueReads(RescueParameterSet params){
@@ -47,6 +45,9 @@ public class RescueReads extends GediProgram {
         addInput(params.maxMM);
         addInput(params.strandness);
         addInput(params.keepID);
+        addInput(params.chrPrefix);
+        addInput(params.noMito);
+        addInput(params.idMap);
 
         addOutput(params.outFile);
     }
@@ -60,8 +61,11 @@ public class RescueReads extends GediProgram {
         int maxMM = getIntParameter(4);
         Strandness strandness = getParameter(5);
         boolean keepID = getBooleanParameter(6);
+        String chrPrefix = getParameter(7);
+        boolean noMito = getBooleanParameter(8);
+        String idMap = getParameter(9);
 
-        samOutputFromPseudoMapping(pseudomaps, origmaps, genome, pseudogenome, keepID, strandness, maxMM);
+        samOutputFromPseudoMapping(pseudomaps, origmaps, genome, pseudogenome, keepID, strandness, maxMM, chrPrefix, noMito, idMap);
         createMetadata(getPrefix(origmaps));
 
         return null;
@@ -150,7 +154,7 @@ public class RescueReads extends GediProgram {
         return origRGR;
     }
 
-    public static void samOutputFromPseudoMapping(String bamFile, String referenceBam, Genomic origGenome, Genomic mapGenome, boolean keepID, Strandness strandness, int maxMM) {
+    public static void samOutputFromPseudoMapping(String bamFile, String referenceBam, Genomic origGenome, Genomic mapGenome, boolean keepID, Strandness strandness, int maxMM, String chrPrefix, boolean noMito, String idMap) {
         SamReader reader = SamReaderFactory.makeDefault().open(new File(bamFile));
         SAMRecordIterator pairedIT = reader.iterator();
         SAMFileHeader header = SamReaderFactory.makeDefault().getFileHeader(new File(referenceBam));
@@ -166,6 +170,8 @@ public class RescueReads extends GediProgram {
         HashMap<String, SAMRecord[]> pairedReadMap = new HashMap<>();
         Pattern p = Pattern.compile("\\S+#(\\w+)_");
         Pattern tagPattern = Pattern.compile("\\*([\\S&&[^;\\*]]+)\\~([\\S&&[^;\\*]]+);");
+        Map<String, String> map1 = readIDMap(idMap, true);
+        Map<String, String> map2 = pairedEnd?readIDMap(idMap, false):null;
 
 
         if (pairedEnd) {
@@ -185,12 +191,23 @@ public class RescueReads extends GediProgram {
             if (rec.getNotPrimaryAlignmentFlag()) {
                 continue;
             }
+            if(noMito && rec.getReferenceName().contains("MT")){
+                continue;
+            }
+
 
 
             if (!pairedEnd) {
-                rec = createRecFromUnmappable(rec, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM);
+                rec.setReadName(map1.get(rec.getReadName()));
+                rec = createRecFromUnmappable(rec, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM, chrPrefix);
                 samWriter.addAlignment(rec);
             } else {
+                if(rec.getFirstOfPairFlag()){
+                    rec.setReadName(map1.get(rec.getReadName()));
+                } else {
+                    rec.setReadName(map2.get(rec.getReadName()));
+                }
+
                 if (!pairedReadMap.containsKey(rec.getReadName())) {
                     pairedReadMap.put(rec.getReadName(), new SAMRecord[2]);
                 }
@@ -215,10 +232,10 @@ public class RescueReads extends GediProgram {
             SAMRecord rec1 = entry.getValue()[0];
             SAMRecord rec2 = entry.getValue()[1];
             if (rec1 != null) {
-                rec1 = createRecFromUnmappable(rec1, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM);
+                rec1 = createRecFromUnmappable(rec1, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM, chrPrefix);
             }
             if (rec2 != null) {
-                rec2 = createRecFromUnmappable(rec2, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM);
+                rec2 = createRecFromUnmappable(rec2, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM, chrPrefix);
             }
             completePairedReads(rec1, rec2);
 
@@ -229,11 +246,13 @@ public class RescueReads extends GediProgram {
                 samWriter.addAlignment(rec2);
             }
         }
+        System.out.println("not induced total: " + noInduced);
+        System.out.println("Nullpointers: " + nullPointer);
 
         samWriter.close();
     }
 
-    public static SAMRecord createRecFromUnmappable(SAMRecord record, Pattern p, Pattern tagPattern, Genomic origGenome, Genomic mapGenome, boolean pairedEnd, boolean keepID, int maxMM) {
+    public static SAMRecord createRecFromUnmappable(SAMRecord record, Pattern p, Pattern tagPattern, Genomic origGenome, Genomic mapGenome, boolean pairedEnd, boolean keepID, int maxMM, String chrPrefix) {
         SAMRecord rec = record.deepCopy();
 
         if(maxMM == 100){
@@ -282,9 +301,19 @@ public class RescueReads extends GediProgram {
         } catch (NullPointerException | IndexOutOfBoundsException | IllegalArgumentException e) {
             rec.setReadUnmappedFlag(true);
             noInduced++;
+            if(e.getClass().equals(new NullPointerException().getClass())){
+                nullPointer++;
+            }
         }
         if (!keepID) {
             rec.setReadName(rec.getReadName().substring(0, rec.getReadName().indexOf("_")));
+        }
+        if(!chrPrefix.equals("")){
+            if(rec.getReferenceName().length()<=2){
+                rec.setReferenceName(chrPrefix.replace("*", rec.getReferenceName()));
+            } else {
+                rec.setReferenceName(chrPrefix.replace("chr*", rec.getReferenceName()));
+            }
         }
 
         return rec;
@@ -336,4 +365,24 @@ public class RescueReads extends GediProgram {
         return path.substring(path.lastIndexOf("/") + 1, path.lastIndexOf(".bam"));
     }
 
+    public static Map<String, String> readIDMap(String path, boolean firstRead){
+        try {
+            Map<String, String> map = new HashMap<>();
+            BufferedReader reader = new BufferedReader(new FileReader(path));
+            String line;
+
+            while((line = reader.readLine()) != null){
+                if(firstRead) {
+                    map.put(line.substring(0, line.indexOf("/")), line.substring(line.indexOf("/") + 1, line.contains("\\")?line.indexOf("\\"):line.length()));
+                } else  {
+                    map.put(line.substring(0, line.indexOf("/")), line.substring(line.indexOf("\\") + 1));
+                }
+            }
+
+            return map;
+        }catch (IOException e){
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

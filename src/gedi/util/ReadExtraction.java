@@ -9,6 +9,7 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +33,7 @@ public class ReadExtraction {
         HashMap<String, SAMRecord[]> pairedReadMap = new HashMap<>();
 
         try {
+            BufferedWriter idWriter = new BufferedWriter(new FileWriter(file.getPath().replace(".bam", ".idMap")));
             String unmappedT2CPath = file.getPath().replace(".bam", "_unmapped_T2C.fastq");
             BufferedWriter unmappedT2CWriter = null;
 
@@ -49,7 +51,7 @@ public class ReadExtraction {
                         quality = StringUtils.reverse(quality).toString();
                     }
 
-                    String tagsToAdd = "_";
+                    String tagsToAdd = "";
                     for(String s : tags){
                         Object val = rec.getAttribute(s);
                         if(val == null){
@@ -59,7 +61,8 @@ public class ReadExtraction {
                     }
 
                     if (rec.getReadUnmappedFlag()) {
-                        unmappedT2CWriter.append("@" + rec.getReadName() + "_#" + seq + tagsToAdd + "\n");
+                        idWriter.append(rec.getReadName()+"/"+ rec.getReadName() + "_#" + seq + "_"  + tagsToAdd + "\n");
+                        unmappedT2CWriter.append("@" + rec.getReadName() + "\n");
                         unmappedT2CWriter.append(convertNucleotides(seq, strandness, pairedEnd, true) + "\n");
                         unmappedT2CWriter.append("+\n");
                         unmappedT2CWriter.append(quality + "\n");
@@ -112,8 +115,8 @@ public class ReadExtraction {
                         quality2 = StringUtils.reverse(quality2).toString();
                     }
 
-                    String tagsToAdd1 = "_";
-                    String tagsToAdd2 = "_";
+                    String tagsToAdd1 = "";
+                    String tagsToAdd2 = "";
 
                     for(String s : tags){
                         Object val = rec1.getAttribute(s);
@@ -129,12 +132,14 @@ public class ReadExtraction {
                         tagsToAdd2 = tagsToAdd2 + "*" + s + "~" + val + ";";
                     }
 
-
-                    unmappedT2CWriter.append("@" + rec1.getReadName() + "_#" + seq1 + "_#" + seq2 + tagsToAdd1 + "\n");
+                    idWriter.append(rec1.getReadName()+"/"+ rec1.getReadName() + "_#" + seq1 + "_#" + seq2 + "_"  + tagsToAdd1 + "\\" + rec2.getReadName() + "_#" + seq1 + "_#" + seq2 + "_" + tagsToAdd2 + "\n");
+                    //unmappedT2CWriter.append("@" + rec1.getReadName() + "_#" + seq1 + "_#" + seq2 + tagsToAdd1 + "\n");
+                    unmappedT2CWriter.append("@" + rec1.getReadName() + "\n");
                     unmappedT2CWriter.append(convertNucleotides(seq1, strandness, pairedEnd, true) + "\n");
                     unmappedT2CWriter.append("+\n");
                     unmappedT2CWriter.append(quality1 + "\n");
-                    unmappedT2CWriter2.append("@" + rec2.getReadName() + "_#" + seq1 + "_#" + seq2 + tagsToAdd2 + "\n");
+                    //unmappedT2CWriter2.append("@" + rec2.getReadName() + "_#" + seq1 + "_#" + seq2 + tagsToAdd2 + "\n");
+                    unmappedT2CWriter2.append("@" + rec2.getReadName() + "\n");
                     unmappedT2CWriter2.append(convertNucleotides(seq2, strandness, pairedEnd, false) + "\n");
                     unmappedT2CWriter2.append("+\n");
                     unmappedT2CWriter2.append(quality2 + "\n");
@@ -144,6 +149,7 @@ public class ReadExtraction {
             }
 
             unmappedT2CWriter.close();
+            idWriter.close();
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
