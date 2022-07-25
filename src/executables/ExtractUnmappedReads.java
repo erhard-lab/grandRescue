@@ -14,8 +14,6 @@ public class ExtractUnmappedReads {
     public static void main(String[] args) {
         Gedi.startup(false, LogUtils.LogMode.Normal,"readRescue");
 
-        boolean writeAll = false;
-        boolean compress = false;
         ArrayList<String> tags = new ArrayList<>();
         Strandness strandness = Strandness.Sense;
         String f = "";
@@ -72,11 +70,9 @@ public class ExtractUnmappedReads {
 
     private static void usage() {
         System.out.println("\nA method to extract unmapped reads from a bam-file and convert all T's to C's for 4sU-read rescue via PseudoMapping. (Bam-files only contain unmapped reads if the STAR parameter outSAMmapped is set to Within)\n");
-        System.out.println("\nextractUnmappedReads [-all] [-c] [-tags] [-strandness] [-f]\n\n " +
-                "-all Output fastq-files for mapped reads and non-T-to-C conversed reads too\n " +
-                "-c compress intermediate files from 'all' param to fastq.gz \n " +
+        System.out.println("\nextractUnmappedReads [-strandness] [-tags] [-f]\n\n " +
                 "-strandness Sense / Antisense \n" +
-                "-tags BAM-File tags to keep\n " +
+                "-tags BAM-File tags to keep (important for scRescue. Add appropriate sc-sequencing tags here)\n " +
                 "-f Input bam-File");
     }
 

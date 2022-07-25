@@ -53,7 +53,7 @@ public class RescueReads extends GediProgram {
     }
 
     @Override
-    public String execute(GediProgramContext context) throws Exception {
+    public String execute(GediProgramContext context) {
         Genomic genome = getParameter(0);
         Genomic pseudogenome = getParameter(1);
         String origmaps = getParameter(2);
@@ -66,7 +66,6 @@ public class RescueReads extends GediProgram {
         String idMap = getParameter(9);
 
         samOutputFromPseudoMapping(pseudomaps, origmaps, genome, pseudogenome, keepID, strandness, maxMM, chrPrefix, noMito, idMap);
-        createMetadata(getPrefix(origmaps));
 
         return null;
     }
@@ -194,18 +193,24 @@ public class RescueReads extends GediProgram {
             if(noMito && rec.getReferenceName().contains("MT")){
                 continue;
             }
+            if(rec.getReadUnmappedFlag()){
+                continue;
+            }
 
 
 
             if (!pairedEnd) {
                 rec.setReadName(map1.get(rec.getReadName()));
+                map1.remove(rec.getReadName());
                 rec = createRecFromUnmappable(rec, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM, chrPrefix);
                 samWriter.addAlignment(rec);
             } else {
                 if(rec.getFirstOfPairFlag()){
                     rec.setReadName(map1.get(rec.getReadName()));
+                    map1.remove(rec.getReadName());
                 } else {
                     rec.setReadName(map2.get(rec.getReadName()));
+                    map2.remove(rec.getReadName());
                 }
 
                 if (!pairedReadMap.containsKey(rec.getReadName())) {
@@ -225,31 +230,34 @@ public class RescueReads extends GediProgram {
         }
 
         for (Map.Entry<String, SAMRecord[]> entry : pairedReadMap.entrySet()) {
-            SAMRecord[] recs = entry.getValue();
-            if (recs == null) {
-                continue;
-            }
-            SAMRecord rec1 = entry.getValue()[0];
-            SAMRecord rec2 = entry.getValue()[1];
-            if (rec1 != null) {
-                rec1 = createRecFromUnmappable(rec1, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM, chrPrefix);
-            }
-            if (rec2 != null) {
-                rec2 = createRecFromUnmappable(rec2, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM, chrPrefix);
-            }
-            completePairedReads(rec1, rec2);
-
-            if (rec1 != null) {
-                samWriter.addAlignment(rec1);
-            }
-            if (rec2 != null) {
-                samWriter.addAlignment(rec2);
-            }
+            handleReads(entry.getValue(), p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM, chrPrefix, samWriter);
         }
         System.out.println("not induced total: " + noInduced);
         System.out.println("Nullpointers: " + nullPointer);
 
         samWriter.close();
+    }
+
+    public static void handleReads(SAMRecord[] current, Pattern p, Pattern tagPattern, Genomic origGenome, Genomic mapGenome, boolean pairedEnd, boolean keepID, int maxMM, String chrPrefix, SAMFileWriter samWriter){
+        if (current == null) {
+            return;
+        }
+        SAMRecord rec1 = current[0];
+        SAMRecord rec2 = current[1];
+        if (rec1 != null) {
+            rec1 = createRecFromUnmappable(rec1, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM, chrPrefix);
+        }
+        if (rec2 != null) {
+            rec2 = createRecFromUnmappable(rec2, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM, chrPrefix);
+        }
+        completePairedReads(rec1, rec2);
+
+        if (rec1 != null && rec1.getProperPairFlag()) {
+            samWriter.addAlignment(rec1);
+        }
+        if (rec2 != null && rec2.getProperPairFlag()) {
+            samWriter.addAlignment(rec2);
+        }
     }
 
     public static SAMRecord createRecFromUnmappable(SAMRecord record, Pattern p, Pattern tagPattern, Genomic origGenome, Genomic mapGenome, boolean pairedEnd, boolean keepID, int maxMM, String chrPrefix) {
@@ -326,15 +334,19 @@ public class RescueReads extends GediProgram {
             r1.setMateAlignmentStart(0);
             r1.setMateReferenceName("*");
             r1.setMateUnmappedFlag(true);
+            r1.setProperPairFlag(false);
         } else if (r1 == null && r2 != null) {
             r2.setMateAlignmentStart(0);
             r2.setMateReferenceName("*");
             r2.setMateUnmappedFlag(true);
+            r2.setProperPairFlag(false);
         } else if (r1 != null && r2 != null) {
             if (r1.getReadUnmappedFlag()) {
                 r2.setMateAlignmentStart(0);
                 r2.setMateReferenceName("*");
                 r2.setMateUnmappedFlag(true);
+                r2.setProperPairFlag(false);
+                r1.setProperPairFlag(false);
             } else {
                 r2.setMateAlignmentStart(r1.getAlignmentStart());
                 r2.setMateReferenceName(r1.getReferenceName());
@@ -344,10 +356,16 @@ public class RescueReads extends GediProgram {
                 r1.setMateAlignmentStart(0);
                 r1.setMateReferenceName("*");
                 r1.setMateUnmappedFlag(true);
+                r2.setProperPairFlag(false);
+                r1.setProperPairFlag(false);
             } else {
                 r1.setMateAlignmentStart(r2.getAlignmentStart());
                 r1.setMateReferenceName(r2.getReferenceName());
                 r1.setMateUnmappedFlag(false);
+            }
+            if(!r1.getReadUnmappedFlag() && !r2.getReadUnmappedFlag()){
+                r1.setProperPairFlag(true);
+                r2.setProperPairFlag(true);
             }
         }
     }

@@ -15,8 +15,6 @@ public class ReadRescue {
     public static void main(String[] args) {
         Gedi.startup(false, LogUtils.LogMode.Normal, "readRescue");
 
-        boolean writeAll = false;
-
         String origGenome = null;
         String pseudoGenome = null;
 
@@ -30,9 +28,7 @@ public class ReadRescue {
 
         int i;
         for (i=0; i<args.length; i++) {
-            if (args[i].equals("-all"))
-                writeAll = true;
-            else if (args[i].equals("-genome")) {
+            if (args[i].equals("-genome")) {
                 ArrayList<String> gnames = new ArrayList<>();
                 i = checkMultiParam(args, ++i, gnames);
                 origGenome = gnames.get(0);

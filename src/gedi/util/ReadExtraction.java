@@ -52,18 +52,18 @@ public class ReadExtraction {
                     }
 
                     String tagsToAdd = "";
-                    for(String s : tags){
+                    for (String s : tags) {
                         Object val = rec.getAttribute(s);
-                        if(val == null){
+                        if (val == null) {
                             continue;
                         }
                         tagsToAdd = tagsToAdd + "*" + s + "~" + val + ";";
                     }
 
                     if (rec.getReadUnmappedFlag()) {
-                        idWriter.append(rec.getReadName()+"/"+ rec.getReadName() + "_#" + seq + "_"  + tagsToAdd + "\n");
+                        idWriter.append(rec.getReadName() + "/" + rec.getReadName() + "_#" + seq + "_" + tagsToAdd + "\n");
                         unmappedT2CWriter.append("@" + rec.getReadName() + "\n");
-                        unmappedT2CWriter.append(convertNucleotides(seq, strandness, pairedEnd, true) + "\n");
+                        unmappedT2CWriter.append(convertNucleotides(seq, strandness, pairedEnd) + "\n");
                         unmappedT2CWriter.append("+\n");
                         unmappedT2CWriter.append(quality + "\n");
                     }
@@ -118,29 +118,29 @@ public class ReadExtraction {
                     String tagsToAdd1 = "";
                     String tagsToAdd2 = "";
 
-                    for(String s : tags){
+                    for (String s : tags) {
                         Object val = rec1.getAttribute(s);
-                        if(val == null){
+                        if (val == null) {
                             continue;
                         }
                         tagsToAdd1 = tagsToAdd1 + "*" + s + "~" + val + ";";
 
                         val = rec2.getAttribute(s);
-                        if(val == null){
+                        if (val == null) {
                             continue;
                         }
                         tagsToAdd2 = tagsToAdd2 + "*" + s + "~" + val + ";";
                     }
 
-                    idWriter.append(rec1.getReadName()+"/"+ rec1.getReadName() + "_#" + seq1 + "_#" + seq2 + "_"  + tagsToAdd1 + "\\" + rec2.getReadName() + "_#" + seq1 + "_#" + seq2 + "_" + tagsToAdd2 + "\n");
+                    idWriter.append(rec1.getReadName() + "/" + rec1.getReadName() + "_#" + seq1 + "_#" + seq2 + "_" + tagsToAdd1 + "\\" + rec2.getReadName() + "_#" + seq1 + "_#" + seq2 + "_" + tagsToAdd2 + "\n");
                     //unmappedT2CWriter.append("@" + rec1.getReadName() + "_#" + seq1 + "_#" + seq2 + tagsToAdd1 + "\n");
                     unmappedT2CWriter.append("@" + rec1.getReadName() + "\n");
-                    unmappedT2CWriter.append(convertNucleotides(seq1, strandness, pairedEnd, true) + "\n");
+                    unmappedT2CWriter.append(convertNucleotides(seq1, strandness, pairedEnd) + "\n");
                     unmappedT2CWriter.append("+\n");
                     unmappedT2CWriter.append(quality1 + "\n");
                     //unmappedT2CWriter2.append("@" + rec2.getReadName() + "_#" + seq1 + "_#" + seq2 + tagsToAdd2 + "\n");
                     unmappedT2CWriter2.append("@" + rec2.getReadName() + "\n");
-                    unmappedT2CWriter2.append(convertNucleotides(seq2, strandness, pairedEnd, false) + "\n");
+                    unmappedT2CWriter2.append(convertNucleotides(seq2, strandness, pairedEnd) + "\n");
                     unmappedT2CWriter2.append("+\n");
                     unmappedT2CWriter2.append(quality2 + "\n");
                 }
@@ -202,54 +202,44 @@ public class ReadExtraction {
         extractUnmappedReadsToSAM(new File(file));
     }
 
-    public static void T2CFastq(String fastq){
+    public static void T2CFastq(String fastq) {
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(fastq.replace(".fastq", "_T2C.fastq")));
             FunctorUtils.FixedBlockIterator<String, ArrayList<String>> it = EI.lines(fastq).block(4);
-            for(ArrayList<String> s : it.loop()){
-                writer.append(s.get(0)+"\n");
-                writer.append(s.get(1).replace("T", "C")+"\n");
-                writer.append(s.get(2)+"\n");
-                writer.append(s.get(3)+"\n");
+            for (ArrayList<String> s : it.loop()) {
+                writer.append(s.get(0) + "\n");
+                writer.append(s.get(1).replace("T", "C") + "\n");
+                writer.append(s.get(2) + "\n");
+                writer.append(s.get(3) + "\n");
             }
             writer.close();
-        }catch(IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     /**
-     *
-     * @param sequence Read Sequence
+     * @param sequence   Read Sequence
      * @param strandness Sequencing protocol sense or antisense
-     * @param pairedEnd Paired End sequencing
-     * @param isFirst Is given Read the First of Pair (only for pairedEnd data)
+     * @param pairedEnd  Paired End sequencing
      * @return
      */
-    private static String convertNucleotides(String sequence, Strandness strandness, boolean pairedEnd, boolean isFirst){
+    private static String convertNucleotides(String sequence, Strandness strandness, boolean pairedEnd) {
         String out = sequence;
 
-        if(!pairedEnd){
-            if(strandness.equals(Strandness.Sense)){
+        if (!pairedEnd) {
+            if (strandness.equals(Strandness.Sense)) {
                 out = out.replace("T", "C");
-            } else if(strandness.equals(Strandness.Antisense)){
+            } else if (strandness.equals(Strandness.Antisense)) {
                 out = out.replace("A", "G");
             } else {
                 throw new IllegalArgumentException("Strandness must be Sense or Antisense");
             }
         } else {
-            if(strandness.equals(Strandness.Sense)){
-                if(isFirst) {
-                    out = out.replace("T", "C");
-                } else {
-                    out = out.replace("A", "G");
-                }
-            } else if(strandness.equals(Strandness.Antisense)){
-                if(isFirst) {
-                    out = out.replace("A", "G");
-                } else {
-                    out = out.replace("T", "C");
-                }
+            if (strandness.equals(Strandness.Sense)) {
+                out = out.replace("T", "C");
+            } else if (strandness.equals(Strandness.Antisense)) {
+                out = out.replace("A", "G");
             } else {
                 throw new IllegalArgumentException("Strandness must be Sense or Antisense");
             }

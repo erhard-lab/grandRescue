@@ -8,24 +8,6 @@ import java.util.regex.Pattern;
 
 public class createOnlyExonGenome {
 
-    public static void main(String[] args) {
-        try {
-            String gtf = "/home/kevin/Desktop/PhD/gedi/Mismatch_Simulation/res/m.ens102/mus_musculus.102.gtf";
-            String fasta = "/home/kevin/Desktop/PhD/gedi/Mismatch_Simulation/res/m.ens102/mus_musculus.102.fasta";
-            String outputPath = "";
-
-            fastaSeparator(new File(fasta), outputPath);
-            createGenomeFiles(gtf, fasta, outputPath,true);
-            System.out.println(getSeq(fasta,"20", 145415, 145751));
-            //System.out.println(getSeq("20",13092, 13428, new File("/home/kevin/Desktop/PhD/gedi/Mismatch_Simulation/res/h.ens90/homo_sapiens.90_genes_corr_T2C.fasta")));
-
-
-        }catch (IOException e){
-            System.out.println(e.getMessage());
-        }
-    }
-
-
     public static HashMap<String, ArrayList<String>> gtfSeparator(File gtf) throws IOException{
         HashMap<String, ArrayList<String>> map = new HashMap<>();
 
@@ -40,10 +22,6 @@ public class createOnlyExonGenome {
             Matcher m = p.matcher(current);
             m.find();
             String key = m.group(1);
-
-            /*System.out.println("--");
-            System.out.println(current);
-            System.out.println(key);*/
 
             if(!map.containsKey(key)){
                 map.put(key, new ArrayList<String>());
@@ -80,7 +58,7 @@ public class createOnlyExonGenome {
                 current = reader.readLine();
                 continue;
             }
-            //writer.append(current+"\n");
+
             writer.append(current);
             current = reader.readLine();
         }
@@ -265,10 +243,6 @@ public class createOnlyExonGenome {
             gtfWriter.close();
             indexWriter.close();
 
-/*            System.out.println("FASTA & GTF-Files complete...");
-
-            correctFASTA(new File(fastaPath), 60);*/
-
             System.out.println("T2C conversion of genome...");
 
             T2CConversion(new File(fastaPath));
@@ -283,7 +257,6 @@ public class createOnlyExonGenome {
         try{
             BufferedReader reader = new BufferedReader(new FileReader(fasta));
             BufferedWriter writer = new BufferedWriter(new FileWriter(fasta.getPath().replace(".fasta", "_T2C.fasta")));
-            int lineCount = 1;
 
             String line = reader.readLine();
             while(line != null){
@@ -292,7 +265,6 @@ public class createOnlyExonGenome {
                 } else {
                     writer.append(line.replace("T", "C")+"\n");
                 }
-                lineCount++;
                 line = reader.readLine();
             }
             reader.close();
