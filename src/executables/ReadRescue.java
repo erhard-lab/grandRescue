@@ -18,12 +18,16 @@ public class ReadRescue {
         String origGenome = null;
         String pseudoGenome = null;
 
-        String origMapped = "";
         String pseudoStarIndex = "";
         String tmpDir = Paths.get("").toString()+"tmp";
-        String prefix = "";
+        String from = "";
+        String to = "";
+        String file = "";
         Strandness strandness = Strandness.Sense;
         ArrayList<String> tags = new ArrayList<>();
+        boolean pe = false;
+        int maxMM = 999;
+        String chrPrefix = "";
 
 
         int i;
@@ -38,15 +42,15 @@ public class ReadRescue {
                 i = checkMultiParam(args, ++i, gnames);
                 pseudoGenome = gnames.get(0);
             }
-            else if(args[i].equals("-origmaps")){
-                ArrayList<String> gnames = new ArrayList<>();
-                i = checkMultiParam(args, ++i, gnames);
-                origMapped = gnames.get(0);
-            }
             else if(args[i].equals("-pseudoSTAR")){
                 ArrayList<String> gnames = new ArrayList<>();
                 i = checkMultiParam(args, ++i, gnames);
                 pseudoStarIndex = gnames.get(0);
+            }
+            else if(args[i].equals("-f")) {
+                ArrayList<String> gnames = new ArrayList<>();
+                i = checkMultiParam(args, ++i, gnames);
+                file = gnames.get(0);
             }
             else if(args[i].equals("-tmp")){
                 ArrayList<String> gnames = new ArrayList<>();
@@ -56,7 +60,7 @@ public class ReadRescue {
             else if(args[i].equals("-prefix")){
                 ArrayList<String> gnames = new ArrayList<>();
                 i = checkMultiParam(args, ++i, gnames);
-                prefix = gnames.get(0);
+                file = gnames.get(0);
             }
             else if(args[i].equals("-tags")){
                 ArrayList<String> tagnames = new ArrayList<>();
@@ -75,6 +79,29 @@ public class ReadRescue {
                     break;
                 }
             }
+            else if(args[i].equals("-pe")){
+                pe = true;
+            }
+            else if(args[i].equals("-from")){
+                ArrayList<String> gnames = new ArrayList<>();
+                i = checkMultiParam(args, ++i, gnames);
+                from = gnames.get(0);
+            }
+            else if(args[i].equals("-to")){
+                ArrayList<String> gnames = new ArrayList<>();
+                i = checkMultiParam(args, ++i, gnames);
+                to = gnames.get(0);
+            }
+            else if(args[i].equals("-maxMM")){
+                ArrayList<String> gnames = new ArrayList<>();
+                i = checkMultiParam(args, ++i, gnames);
+                maxMM = Integer.valueOf(gnames.get(0));
+            }
+            else if(args[i].equals("-chrPrefix")){
+                ArrayList<String> gnames = new ArrayList<>();
+                i = checkMultiParam(args, ++i, gnames);
+                chrPrefix = gnames.get(0);
+            }
             else if(args[i].equals("-h")){
                 usage();
                 return;
@@ -83,21 +110,18 @@ public class ReadRescue {
                 break;
         }
 
-        if(prefix == "" || origGenome == "" || pseudoGenome == "" || pseudoStarIndex == "" || origMapped == ""){
-            System.out.println("Necessary infomation: -prefix, -genome, -pseudogenome, -origmaps, -pseudoSTAR");
+        if(file == "" || origGenome == "" || pseudoGenome == "" || pseudoStarIndex == ""){
+            System.out.println("Necessary infomation: -file, -genome, -pseudogenome, -pseudoSTAR");
 
             usage();
             System.exit(1);
         }
 
-        createRescueBash(origGenome, pseudoGenome, origMapped, pseudoStarIndex, tmpDir, prefix, tags, strandness);
+        createRescueBash(origGenome, pseudoGenome, pseudoStarIndex, tmpDir, file.replace(".bam", ""), tags, strandness, pe, from, to, maxMM, chrPrefix);
 
     }
 
-    private static String checkParam(String[] args, int index) {
-        if (index>=args.length || args[index].startsWith("-")) throw new RuntimeException("Missing argument for "+args[index-1]);
-        return args[index];
-    }
+
     private static int checkMultiParam(String[] args, int index, ArrayList<String> re) {
         while (index<args.length && !args[index].startsWith("-"))
             re.add(args[index++]);
@@ -106,6 +130,6 @@ public class ReadRescue {
 
     private static void usage() {
         System.out.println("\nRescue unmappable reads of a single file in 4sU rna-seq experiments via mapping of unmappable reads to a pseudo genome and subsequent backtracking of new mappings to real genome.\n");
-        System.out.println("\nReadRescue [-genome] [-pseudogenome] [-pseudoSTAR] [-origmaps] [-prefix]\n\n -genome The gedi indexed genome (e.g. h.ens90, m.ens90...) \n -pseudogenome The gedi indexed pseudo genome of the original genome\n -pseudoSTAR The directory of the STAR index of the pseudo genome\n -origmaps Absolute path to the original bam-file with all mapped reads \n -prefix Use Prefix of the -origmaps bam-file\n\n");
+        System.out.println("\nReadRescue [-genome] [-pseudogenome] [-pseudoSTAR] [-origmaps] [-prefix] [-tmp] [-tags] [-strandness] [-pe] [-from] [-to] [-maxMM] [-chrPrefix]\n\n -genome The gedi indexed genome (e.g. h.ens90, m.ens90...) \n -pseudogenome The gedi indexed pseudo genome of the original genome\n -pseudoSTAR The directory of the STAR index of the pseudo genome\n -origmaps Absolute path to the original bam-file with all mapped reads \n -prefix Use Prefix of the -origmaps bam-file\n\n");
     }
 }

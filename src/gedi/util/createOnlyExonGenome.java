@@ -1,6 +1,7 @@
 package gedi.util;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.sql.SQLOutput;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -40,6 +41,7 @@ public class createOnlyExonGenome {
         String chrom = "";
         BufferedWriter writer = null;
         outPath = outPath + fasta.getAbsolutePath().substring(fasta.getAbsolutePath().lastIndexOf("/"));
+        System.out.println(outPath);
 
         while(current != null){
             if(current.startsWith(">")){
@@ -53,6 +55,7 @@ public class createOnlyExonGenome {
                 System.out.println(chrom);
 
                 File file = new File(outPath.replace(".fasta", "_chrom_"+chrom+".fasta.tmp"));
+                file.getParentFile().mkdirs();
                 file.deleteOnExit();
                 writer = new BufferedWriter(new FileWriter(file));
                 current = reader.readLine();
@@ -139,7 +142,7 @@ public class createOnlyExonGenome {
         writer.close();
     }
 
-    public static void createGenomeFiles(String gtfString, String fastaString, String outPath, boolean toPlusStrand){
+    public static void createGenomeFiles(String gtfString, String fastaString, String outPath, String from, String to, boolean toPlusStrand){
 
         System.out.println("Starting to create Genome Files...");
 
@@ -176,7 +179,7 @@ public class createOnlyExonGenome {
                     counter++;
                     if(counter == 11){
                         counter = 0;
-                        break;
+                        //break;
                     }
                     String rec = records.get(i);
                     //Groups:
@@ -235,7 +238,6 @@ public class createOnlyExonGenome {
 
 
                 }
-                System.out.println("____");
                 fastaWriter.append("\n");
 
             }
@@ -243,9 +245,9 @@ public class createOnlyExonGenome {
             gtfWriter.close();
             indexWriter.close();
 
-            System.out.println("T2C conversion of genome...");
+            System.out.println("Nucleotide conversion of genome ("+from+" -> "+to+") ...");
 
-            T2CConversion(new File(fastaPath));
+            NucleotideConversion(new File(fastaPath), from, to);
 
             System.out.println("Finished createGenomeFiles...");
         }catch (IOException e){
@@ -253,17 +255,18 @@ public class createOnlyExonGenome {
         }
     }
 
-    public static void T2CConversion(File fasta){
+    public static void NucleotideConversion(File fasta, String from, String to){
         try{
             BufferedReader reader = new BufferedReader(new FileReader(fasta));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(fasta.getPath().replace(".fasta", "_T2C.fasta")));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fasta.getPath().replace(".fasta", "_"+from+"2"+to+".fasta")));
+            Files.delete(fasta.toPath());
 
             String line = reader.readLine();
             while(line != null){
                 if(line.startsWith(">")){
                     writer.append(line+"\n");
                 } else {
-                    writer.append(line.replace("T", "C")+"\n");
+                    writer.append(line.replace(from, to)+"\n");
                 }
                 line = reader.readLine();
             }

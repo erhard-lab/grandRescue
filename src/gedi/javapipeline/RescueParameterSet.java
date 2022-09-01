@@ -2,7 +2,6 @@ package gedi.javapipeline;
 
 import gedi.core.genomic.Genomic;
 import gedi.core.reference.Strandness;
-import gedi.RescueReads;
 import gedi.util.program.GediParameter;
 import gedi.util.program.GediParameterSet;
 import gedi.util.program.parametertypes.*;

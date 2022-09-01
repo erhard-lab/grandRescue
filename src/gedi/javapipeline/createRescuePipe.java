@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import static gedi.javapipeline.createRescueBash.createRescueBash;
 import static gedi.javapipeline.createNo4sUBash.createNo4sUBash;
 import static gedi.RescueReads.getPrefix;
+/*
 
 public class createRescuePipe extends GediProgram {
 
@@ -114,3 +115,4 @@ public class createRescuePipe extends GediProgram {
 
 
 }
+*/

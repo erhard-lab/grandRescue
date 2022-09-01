@@ -1,6 +1,6 @@
 package executables;
 
-import gedi.app.Gedi;
+/*import gedi.app.Gedi;
 import gedi.javapipeline.RescuePipeParameterSet;
 import gedi.javapipeline.createRescuePipe;
 import gedi.util.LogUtils;
@@ -23,4 +23,4 @@ public class ReadRescuePipe {
         System.out.println("\nReadRescuePipe [-threads] [-genome] [-pseudogenome] [-pseudoSTAR] [-prefix] [-tmp] [-sense] [-files]  \n\n -threads Number of threads\n -genome The gedi indexed genome (e.g. h.ens90, m.ens90...) \n -pseudogenome The gedi indexed pseudo genome of the original genome\n -pseudoSTAR The directory of the STAR index of the pseudo genome \n -prefix Use Prefix of the -origmaps bam-file\n\n");
     }
 
-}
+}*/

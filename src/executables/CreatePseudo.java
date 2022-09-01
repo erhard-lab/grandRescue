@@ -16,6 +16,8 @@ public class CreatePseudo {
         String gtf = "";
         String fasta = "";
         String outPath = "";
+        String from = "T";
+        String to = "C";
 
         int i;
         for (i=0; i<args.length; i++) {
@@ -27,7 +29,14 @@ public class CreatePseudo {
             }
             else if(args[i].equals("-o")){
                 outPath = checkParam(args, ++i);
-            }else if(args[i].equals("-h")){
+            }
+            else if(args[i].equals("-from")){
+                from = checkParam(args, ++i);
+            }
+            else if(args[i].equals("-to")){
+                to = checkParam(args, ++i);
+            }
+            else if(args[i].equals("-h")){
                 usage();
                 return;
             }
@@ -37,15 +46,15 @@ public class CreatePseudo {
 
         try {
             fastaSeparator(new File(fasta), outPath);
-            createGenomeFiles(gtf, fasta, outPath, true);
+            createGenomeFiles(gtf, fasta, outPath, from, to,true);
         } catch(IOException e){
             e.printStackTrace();
         }
     }
 
     private static void usage() {
-        System.out.println("\nCreate fasta- & gtf-Files of PseudoGenome for ReadRescue-Procedure, replacing all T's with C's and replacing all intronic regions with 100 N spacer.\nSTAR's genomeGenerate on these files might take several days, depending on the size of the genome!\n");
-        System.out.println("\nCreatePseudo [-gtf] [-fasta] [-o]\n\n -gtf The gtf-file of the genome \n -fasta The fasta-File of the genome\n -o Output-Folder for the PseudoGenome\n\n");
+        System.out.println("\nCreate fasta- & gtf-Files of PseudoGenome for ReadRescue-Procedure, replacing all T's with C's (by default) and replacing all intronic regions with 100 N spacer.\nSTAR's genomeGenerate on these files might take several days, depending on the size of the genome!\n");
+        System.out.println("\nCreatePseudo [-gtf] [-fasta] [-from] [-to] [-o]\n\n -gtf The gtf-file of the genome\n -fasta The fasta-File of the genome\n -from Specify which nucleotide should be converted (default: T)\n -to Specify to which nucleotide should be converted (default: C)\n -o Output-Folder for the PseudoGenome\n\n");
     }
 
     private static String checkParam(String[] args, int index) throws IllegalArgumentException {

@@ -16,7 +16,7 @@ import java.util.ArrayList;
 public class createRescueBash {
 
 
-    public static String createRescueBash(String origGenome, String pseudoGenome, String origMapped, String pseudoStarIndex, String tmpDir, String prefix, ArrayList<String> tags, Strandness strandness) {
+    public static String createRescueBash(String origGenome, String pseudoGenome, String pseudoStarIndex, String tmpDir, String prefix, ArrayList<String> tags, Strandness strandness, boolean pe, String from, String to, int maxMM, String chrPrefix) {
         String pathString = Paths.get(prefix+".sh").toAbsolutePath().toString();
         try {
             Charset charset = StandardCharsets.UTF_8;
@@ -42,7 +42,35 @@ public class createRescueBash {
             }
 
             file = file.replaceAll("\\{tmp}", tmpDir);
-            file = file.replaceAll("\\{bampath}", origMapped);
+            if(!from.equals("")) {
+                file = file.replaceAll("\\{from}", "-from " + from);
+            } else {
+                file = file.replaceAll("\\{from}", "");
+            }
+            if(!to.equals("")) {
+                file = file.replaceAll("\\{to}", "-to " + to);
+            } else {
+                file = file.replaceAll("\\{to}", "");
+            }
+            if(pe){
+                file = file.replaceAll("\\{pe_unmapped}", "samtools view -b -f 8 -F 4 {prefix}_unmappedMates.bam\n"+
+                        "samtools merge unmappedMatesReads.bam {prefix}_unmapped.bam {prefix}_unmappedMates.bam\n"+
+                        "samtools sort -n unmappedMatesReads.bam\n"+
+                        "mv unmappedMatesReads.bam {prefix}_unmapped.bam\n");
+            } else {
+                file = file.replaceAll("\\{pe_unmapped}", "");
+            }
+
+            if(maxMM!=999) {
+                file = file.replaceAll("\\{maxMM}", "-maxMM " + maxMM);
+            } else {
+                file = file.replaceAll("\\{maxMM}", "");
+            }
+            if(!chrPrefix.equals("")) {
+                file = file.replaceAll("\\{chrPrefix}", "-chrPrefix " + chrPrefix);
+            } else {
+                file = file.replaceAll("\\{chrPrefix}", "");
+            }
             file = file.replaceAll("\\{pseudoStarIndex}", pseudoStarIndex);
             file = file.replaceAll("\\{genome}", origGenome);
             file = file.replaceAll("\\{pseudogenome}", pseudoGenome);

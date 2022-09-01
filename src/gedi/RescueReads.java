@@ -169,8 +169,8 @@ public class RescueReads extends GediProgram {
         HashMap<String, SAMRecord[]> pairedReadMap = new HashMap<>();
         Pattern p = Pattern.compile("\\S+#(\\w+)_");
         Pattern tagPattern = Pattern.compile("\\*([\\S&&[^;\\*]]+)\\~([\\S&&[^;\\*]]+);");
-        Map<String, String> map1 = readIDMap(idMap, true);
-        Map<String, String> map2 = pairedEnd?readIDMap(idMap, false):null;
+        Map<String, String[]> map1 = readIDMap(idMap, true);
+        Map<String, String[]> map2 = pairedEnd?readIDMap(idMap, false):null;
 
 
         if (pairedEnd) {
@@ -179,6 +179,12 @@ public class RescueReads extends GediProgram {
 
         for (SAMRecord rec : it.loop()) {
             if (!pairedEnd && !strandness.equals(Strandness.Antisense) && rec.getReadNegativeStrandFlag()) {
+                continue;
+            }
+            if(rec.getReadUnmappedFlag()){
+                continue;
+            }
+            if(pairedEnd && !rec.getProperPairFlag()){
                 continue;
             }
             if (rec.getStringAttribute("MD").contains("N")) {
@@ -193,23 +199,21 @@ public class RescueReads extends GediProgram {
             if(noMito && rec.getReferenceName().contains("MT")){
                 continue;
             }
-            if(rec.getReadUnmappedFlag()){
-                continue;
-            }
+
 
 
 
             if (!pairedEnd) {
-                rec.setReadName(map1.get(rec.getReadName()));
+                rec.setReadName(rec.getReadName() + "_#" + map1.get(rec.getReadName())[0] + "_" + map1.get(rec.getReadName())[1]);
                 map1.remove(rec.getReadName());
                 rec = createRecFromUnmappable(rec, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM, chrPrefix);
                 samWriter.addAlignment(rec);
             } else {
                 if(rec.getFirstOfPairFlag()){
-                    rec.setReadName(map1.get(rec.getReadName()));
+                    rec.setReadName(rec.getReadName() + "_#" + map1.get(rec.getReadName())[0] + "_#" + map2.get(rec.getReadName())[0] +  "_" + map1.get(rec.getReadName())[1]);
                     map1.remove(rec.getReadName());
                 } else {
-                    rec.setReadName(map2.get(rec.getReadName()));
+                    rec.setReadName(rec.getReadName() + "_#" + map1.get(rec.getReadName())[0] + "_#" + map2.get(rec.getReadName())[0] +  "_" + map2.get(rec.getReadName())[1]);
                     map2.remove(rec.getReadName());
                 }
 
@@ -225,6 +229,11 @@ public class RescueReads extends GediProgram {
                     current[1] = rec;
                 } else {
                     throw new IllegalArgumentException("Read neither first of pair nor second of pair \n" + rec.getSAMString());
+                }
+
+                if(current[0] != null & current[1] != null){
+                    handleReads(current, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM, chrPrefix, samWriter);
+                    pairedReadMap.remove(rec.getReadName());
                 }
             }
         }
@@ -383,17 +392,32 @@ public class RescueReads extends GediProgram {
         return path.substring(path.lastIndexOf("/") + 1, path.lastIndexOf(".bam"));
     }
 
-    public static Map<String, String> readIDMap(String path, boolean firstRead){
+    public static Map<String, String[]> readIDMap(String path, boolean firstRead){
         try {
-            Map<String, String> map = new HashMap<>();
+            Map<String, String[]> map = new TreeMap<>();
             BufferedReader reader = new BufferedReader(new FileReader(path));
             String line;
 
             while((line = reader.readLine()) != null){
+                String[] value = new String[2];
+                value[0] = "";
+                value[1] = "";
+                String key;
                 if(firstRead) {
-                    map.put(line.substring(0, line.indexOf("/")), line.substring(line.indexOf("/") + 1, line.contains("\\")?line.indexOf("\\"):line.length()));
+                    key = line.substring(0, line.indexOf("_"));
+                    line = line.substring(line.indexOf("_")+1);
+                    value[0] = line.substring(0, line.indexOf("_"));
+                    value[1] = line.substring(line.indexOf("_")+1, line.contains("\\")?line.indexOf("\\"):line.length());
+                    map.put(key, value);
+                    //map.put(line.substring(0, line.indexOf("_")), line.substring(line.indexOf("/") + 1, line.contains("\\")?line.indexOf("\\"):line.length()));
                 } else  {
-                    map.put(line.substring(0, line.indexOf("/")), line.substring(line.indexOf("\\") + 1));
+                    line = line.substring(line.indexOf("\\")+1);
+                    key = line.substring(0, line.indexOf("_"));
+                    line = line.substring(line.indexOf("_")+1);
+                    value[0] = line.substring(0, line.indexOf("_"));
+                    value[1] = line.substring(line.indexOf("_")+1);
+                    map.put(key, value);
+                    //map.put(line.substring(0, line.indexOf("/")), line.substring(line.indexOf("\\") + 1));
                 }
             }
 
