@@ -62,7 +62,6 @@ The ExtractReads function has the following [optional] parameters:
     
     -f: The BAM file of your mapping run. (Needs to contain unmapped reads!)
     [-strandness: Set the strandness of your data set: Sense or Antisense. Default: Sense]
-    [-tags: Specify a list of tags to keep. E.g. for scSeq: -tags UB UY UR CB CY CR]
     [-from: Set which nucleotide to convert if you're not dealing with T-to-C mismatches.]
     [-to: Set to which nucleotide to convert if you're not dealing with T-to-C mismatches.]
     
@@ -123,7 +122,6 @@ The ReadRescue function has the following [optional] parameters:
     -f: The BAM file of your mapping run. (Needs to contain unmapped reads!)
     [-pe: Set this flag, if you have paired-end data]
     [-strandness: Set the strandness of your data set: Sense or Antisense. Default: Sense]
-    [-tags: Specify a list of tags to keep. E.g. for scSeq: -tags UB UY UR CB CY CR]
     [-from: Set which nucleotide to convert if you're not dealing with T-to-C mismatches.]
     [-to: Set to which nucleotide to convert if you're not dealing with T-to-C mismatches.]
     [-maxMM: Reads with more mismatches than the specified int will be removed. Default: 75% of read length]
