@@ -23,7 +23,7 @@ public class ReadExtraction {
      *             Saves the original read sequence (with T->C MM's from 4su labeling) in ReadID, then changes all T's to C's in Read Sequence.
      *             These reads can then be mapped to the pseudo-genome where all T's to C's are converted.
      */
-    public static void extractUnmappedReadsToFastq(File file, ArrayList<String> tags, Strandness strandness, String from, String to) {
+    public static void extractUnmappedReadsToFastq(File file, Strandness strandness, String from, String to) {
         System.out.println("Extracting unmappable reads...");
         SamReader reader = SamReaderFactory.makeDefault().open(file);
         SAMRecordIterator pairedIT = reader.iterator();
@@ -55,12 +55,8 @@ public class ReadExtraction {
                     }
 
                     String tagsToAdd = "";
-                    for (String s : tags) {
-                        Object val = rec.getAttribute(s);
-                        if (val == null) {
-                            continue;
-                        }
-                        tagsToAdd = tagsToAdd + "*" + s + "~" + val + ";";
+                    for (SAMRecord.SAMTagAndValue s : rec.getAttributes()) {
+                        tagsToAdd = tagsToAdd + "*" + s.tag + "~" + s.value + ";";
                     }
 
                     idWriter.append(rec.getReadName() + "_" + seq + "_" + tagsToAdd + "\n");
@@ -98,7 +94,7 @@ public class ReadExtraction {
                     }
 
                     if (current[0] != null && current[1] != null) {
-                        writePairedReadsToFastq(current[0], current[1], idWriter, unmappedT2CWriter, unmappedT2CWriter2, tags, pairedEnd, strandness, from, to);
+                        writePairedReadsToFastq(current[0], current[1], idWriter, unmappedT2CWriter, unmappedT2CWriter2, pairedEnd, strandness, from, to);
                         pairedReadMap.remove(rec.getReadName());
                     }
                 }
@@ -113,7 +109,7 @@ public class ReadExtraction {
         }
     }
 
-    public static void writePairedReadsToFastq(SAMRecord rec1, SAMRecord rec2, BufferedWriter idWriter, BufferedWriter unmappedT2CWriter, BufferedWriter unmappedT2CWriter2, ArrayList<String> tags, boolean pairedEnd, Strandness strandness, String from, String to) throws IOException {
+    public static void writePairedReadsToFastq(SAMRecord rec1, SAMRecord rec2, BufferedWriter idWriter, BufferedWriter unmappedT2CWriter, BufferedWriter unmappedT2CWriter2, boolean pairedEnd, Strandness strandness, String from, String to) throws IOException {
         String seq1 = rec1.getReadString();
         String seq2 = rec2.getReadString();
         String quality1 = rec1.getBaseQualityString();
@@ -131,18 +127,11 @@ public class ReadExtraction {
         String tagsToAdd1 = "";
         String tagsToAdd2 = "";
 
-        for (String s : tags) {
-            Object val = rec1.getAttribute(s);
-            if (val == null) {
-                continue;
-            }
-            tagsToAdd1 = tagsToAdd1 + "*" + s + "~" + val + ";";
-
-            val = rec2.getAttribute(s);
-            if (val == null) {
-                continue;
-            }
-            tagsToAdd2 = tagsToAdd2 + "*" + s + "~" + val + ";";
+        for (SAMRecord.SAMTagAndValue s : rec1.getAttributes()) {
+            tagsToAdd1 = tagsToAdd1 + "*" + s.tag + "~" + s.value + ";";
+        }
+        for (SAMRecord.SAMTagAndValue s : rec2.getAttributes()) {
+            tagsToAdd2 = tagsToAdd2 + "*" + s.tag + "~" + s.value + ";";
         }
 
         //idWriter.append(rec1.getReadName()+"/"+ rec1.getReadName() + "_#" + seq1 + "_#" + seq2 + "_"  + tagsToAdd1 + "\\" + rec2.getReadName() + "_#" + seq1 + "_#" + seq2 + "_" + tagsToAdd2 + "\n");

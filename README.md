@@ -1,5 +1,5 @@
 ## SLAM-Rescue
-SLAM-Rescue is a dual-function software to circumvent mappability problems and correct for 4sU-induced changes of RNA metabolism in SLAM-seq data sets. To achieve this, SLAM-Rescue offers the tools to align previously unmappable reads in a T-to-C mismatch independent manner and adjusts read counts of 4sU-disrupted genes via a linear regression approach. Additionally, the tools provided by SLAM-Rescue can also be used to apply the mismatch-independent read alignment to similar methods that deal with other kinds of mismatches (e.g. C-to-T mismatches in Bisulfite-seq) 
+SLAM-Rescue is a software to circumvent mappability problems and correct for 4sU-induced changes of RNA metabolism in SLAM-seq data sets. To achieve this, SLAM-Rescue offers the tools to align previously unmappable reads in a T-to-C mismatch independent manner. Additionally, the tools provided by SLAM-Rescue can also be used to apply the mismatch-independent read alignment to similar methods that deal with other kinds of mismatches (e.g. C-to-T mismatches in Bisulfite-seq) 
 
 # Prerequisites
 - Java >= 1.8
@@ -62,7 +62,6 @@ The ExtractReads function has the following [optional] parameters:
     
     -f: The BAM file of your mapping run. (Needs to contain unmapped reads!)
     [-strandness: Set the strandness of your data set: Sense or Antisense. Default: Sense]
-    [-tags: Specify a list of tags to keep. E.g. for scSeq: -tags UB UY UR CB CY CR]
     [-from: Set which nucleotide to convert if you're not dealing with T-to-C mismatches.]
     [-to: Set to which nucleotide to convert if you're not dealing with T-to-C mismatches.]
     
@@ -123,7 +122,6 @@ The ReadRescue function has the following [optional] parameters:
     -f: The BAM file of your mapping run. (Needs to contain unmapped reads!)
     [-pe: Set this flag, if you have paired-end data]
     [-strandness: Set the strandness of your data set: Sense or Antisense. Default: Sense]
-    [-tags: Specify a list of tags to keep. E.g. for scSeq: -tags UB UY UR CB CY CR]
     [-from: Set which nucleotide to convert if you're not dealing with T-to-C mismatches.]
     [-to: Set to which nucleotide to convert if you're not dealing with T-to-C mismatches.]
     [-maxMM: Reads with more mismatches than the specified int will be removed. Default: 75% of read length]

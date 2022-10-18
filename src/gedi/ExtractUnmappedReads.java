@@ -13,7 +13,6 @@ import static gedi.util.ReadExtraction.extractUnmappedReadsToFastq;
 public class ExtractUnmappedReads extends GediProgram {
     public ExtractUnmappedReads(ExtractionParameterSet params){
         addInput(params.strandness);
-        addInput(params.tags);
         addInput(params.from);
         addInput(params.to);
         addInput(params.f);
@@ -24,12 +23,11 @@ public class ExtractUnmappedReads extends GediProgram {
     @Override
     public String execute(GediProgramContext context) {
         Strandness strandness = getParameter(0);
-        ArrayList<String> tags = getParameters(1);
-        String from = getParameter(2);
-        String to = getParameter(3);
-        String file = getParameter(4);
+        String from = getParameter(1);
+        String to = getParameter(2);
+        String file = getParameter(3);
 
-        extractUnmappedReadsToFastq(new File(file), tags, strandness, from, to);
+        extractUnmappedReadsToFastq(new File(file), strandness, from, to);
 
         return null;
     }

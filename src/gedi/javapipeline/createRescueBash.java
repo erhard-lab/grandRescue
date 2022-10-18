@@ -16,20 +16,13 @@ import java.util.ArrayList;
 public class createRescueBash {
 
 
-    public static String createRescueBash(String origGenome, String pseudoGenome, String pseudoStarIndex, String tmpDir, String prefix, ArrayList<String> tags, Strandness strandness, boolean pe, String from, String to, int maxMM, String chrPrefix) {
+    public static String createRescueBash(String origGenome, String pseudoGenome, String pseudoStarIndex, String tmpDir, String prefix, Strandness strandness, boolean pe, String from, String to, int maxMM, String chrPrefix) {
         String pathString = Paths.get(prefix+".sh").toAbsolutePath().toString();
         try {
             Charset charset = StandardCharsets.UTF_8;
             String name = "readRescue.sh";
 
 
-            String tagnames = "";
-            if(!tags.isEmpty()){
-                tagnames = "-tags";
-                for(String s : tags){
-                    tagnames = tagnames + " "+s;
-                }
-            }
             String file = "";
             if (!new File(name).exists()) {
                 URL res = Pipeline.class.getResource("/resources/"+name);
@@ -76,7 +69,6 @@ public class createRescueBash {
             file = file.replaceAll("\\{pseudogenome}", pseudoGenome);
             file = file.replaceAll("\\{files}", prefix+"_unmapped_T2C.fastq");
             file = file.replaceAll("\\{prefix}", prefix);
-            file = file.replaceAll("\\{tags}", tagnames);
             file = file.replaceAll("\\{strandness}", strandness.name());
 
 

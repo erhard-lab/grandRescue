@@ -40,7 +40,7 @@ public class createOnlyExonGenome {
         String current = reader.readLine();
         String chrom = "";
         BufferedWriter writer = null;
-        outPath = outPath + fasta.getAbsolutePath().substring(fasta.getAbsolutePath().lastIndexOf("/"));
+        outPath = outPath + fasta.getAbsolutePath().substring(fasta.getAbsolutePath().lastIndexOf("/")+1);
         System.out.println(outPath);
 
         while(current != null){
@@ -55,7 +55,7 @@ public class createOnlyExonGenome {
                 System.out.println(chrom);
 
                 File file = new File(outPath.replace(".fasta", "_chrom_"+chrom+".fasta.tmp"));
-                file.getParentFile().mkdirs();
+                //file.getParentFile().mkdirs();
                 file.deleteOnExit();
                 writer = new BufferedWriter(new FileWriter(file));
                 current = reader.readLine();
@@ -153,12 +153,14 @@ public class createOnlyExonGenome {
 
         try {
             HashMap<String, ArrayList<String>> map = gtfSeparator(gtf);
-            outPath = outPath + fasta.getAbsolutePath().substring(fasta.getAbsolutePath().lastIndexOf("/"));
+            outPath = outPath + fasta.getAbsolutePath().substring(fasta.getAbsolutePath().lastIndexOf("/")+1);
             String fastaPath = outPath.replace(".fasta", "_pseudo.fasta");
             BufferedWriter fastaWriter = new BufferedWriter(new FileWriter(fastaPath));
             BufferedWriter gtfWriter = new BufferedWriter(new FileWriter(fastaPath.replace(".fasta", ".gtf")));
             BufferedWriter indexWriter = new BufferedWriter(new FileWriter(fastaPath.replace(".fasta", ".index")));
             System.out.println(fastaPath);
+            System.out.println(fastaPath.substring(1));
+
 
             gtfWriter.append(getGTFHeader(gtf));
             indexWriter.append("Gene\tpseudoPos\torigPos\n");

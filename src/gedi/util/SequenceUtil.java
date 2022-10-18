@@ -308,6 +308,6 @@ public class SequenceUtil {
         if (calcMD)
             record.setAttribute(SAMTag.MD.name(), str.toString());
         if (calcNM)
-            record.setAttribute(SAMTag.NM.name(), nm);
+            record.setAttribute("nM", nm);
     }
 }

@@ -24,7 +24,6 @@ public class ReadRescue {
         String to = "";
         String file = "";
         Strandness strandness = Strandness.Sense;
-        ArrayList<String> tags = new ArrayList<>();
         boolean pe = false;
         int maxMM = 999;
         String chrPrefix = "";
@@ -61,11 +60,6 @@ public class ReadRescue {
                 ArrayList<String> gnames = new ArrayList<>();
                 i = checkMultiParam(args, ++i, gnames);
                 file = gnames.get(0);
-            }
-            else if(args[i].equals("-tags")){
-                ArrayList<String> tagnames = new ArrayList<>();
-                i = checkMultiParam(args, ++i, tagnames);
-                tags.addAll(tagnames);
             }
             else if(args[i].equals("-strandness")){
                 ArrayList<String> strand = new ArrayList<>();
@@ -117,7 +111,7 @@ public class ReadRescue {
             System.exit(1);
         }
 
-        createRescueBash(origGenome, pseudoGenome, pseudoStarIndex, tmpDir, file.replace(".bam", ""), tags, strandness, pe, from, to, maxMM, chrPrefix);
+        createRescueBash(origGenome, pseudoGenome, pseudoStarIndex, tmpDir, file.replace(".bam", ""), strandness, pe, from, to, maxMM, chrPrefix);
 
     }
 

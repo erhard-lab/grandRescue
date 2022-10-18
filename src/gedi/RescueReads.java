@@ -13,6 +13,7 @@ import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.core.region.ReferenceGenomicRegion;
 import gedi.javapipeline.RescueParameterSet;
 import gedi.region.bam.FactoryGenomicRegion;
+import gedi.util.StringUtils;
 import gedi.util.dynamic.DynamicObject;
 import gedi.util.functions.EI;
 import gedi.util.functions.ExtendedIterator;
@@ -178,10 +179,20 @@ public class RescueReads extends GediProgram {
         }
 
         for (SAMRecord rec : it.loop()) {
+/*            //****************
+            //TODO
+            String readName = rec.getReadName();
+            for(int r = 0; r < 8; r++){
+                readName = readName.replaceFirst("_", ";");
+            }
+            rec.setReadName(readName);
+            //*****************/
             if (!pairedEnd && !strandness.equals(Strandness.Antisense) && rec.getReadNegativeStrandFlag()) {
                 continue;
             }
             if(rec.getReadUnmappedFlag()){
+                //rec.setReadName(rec.getReadName() + "_#" + map1.get(rec.getReadName())[0] + "_" + map1.get(rec.getReadName())[1]);
+                //samWriter.addAlignment(rec);
                 continue;
             }
             if(pairedEnd && !rec.getProperPairFlag()){
@@ -207,6 +218,13 @@ public class RescueReads extends GediProgram {
                 rec.setReadName(rec.getReadName() + "_#" + map1.get(rec.getReadName())[0] + "_" + map1.get(rec.getReadName())[1]);
                 map1.remove(rec.getReadName());
                 rec = createRecFromUnmappable(rec, p, tagPattern, origGenome, mapGenome, pairedEnd, keepID, maxMM, chrPrefix);
+/*                //***************
+                rec.setReadName(rec.getReadName().replace(";","_"));
+                if(rec.getReadLength() != rec.getBaseQualityString().length()){
+                    noInduced++;
+                    continue;
+                }
+                //****************/
                 samWriter.addAlignment(rec);
             } else {
                 if(rec.getFirstOfPairFlag()){
@@ -271,8 +289,9 @@ public class RescueReads extends GediProgram {
 
     public static SAMRecord createRecFromUnmappable(SAMRecord record, Pattern p, Pattern tagPattern, Genomic origGenome, Genomic mapGenome, boolean pairedEnd, boolean keepID, int maxMM, String chrPrefix) {
         SAMRecord rec = record.deepCopy();
+        boolean keepNM = false;
 
-        if(maxMM == 100){
+        if(maxMM == 999){
             maxMM = (int) (rec.getReadString().length() * 0.75);
         }
         try {
@@ -290,7 +309,14 @@ public class RescueReads extends GediProgram {
 
             Matcher tagMatcher = tagPattern.matcher(rec.getReadName());
             while (tagMatcher.find()) {
-                rec.setAttribute(tagMatcher.group(1), tagMatcher.group(2));
+                if(tagMatcher.group(1).equalsIgnoreCase("NM")){
+                    keepNM = true;
+                }
+                try{
+                    rec.setAttribute(tagMatcher.group(1), Integer.parseInt(tagMatcher.group(2)));
+                } catch(NumberFormatException e){
+                    rec.setAttribute(tagMatcher.group(1), tagMatcher.group(2));
+                }
             }
 
 
@@ -307,16 +333,18 @@ public class RescueReads extends GediProgram {
             rec.setAttribute("nM", null);
             rec.setAttribute("NM", null);
 
-            calculateMdAndNmTags(rec, origSequence.getBytes(StandardCharsets.UTF_8), rec.getAlignmentStart() - 1, true, true);
+            calculateMdAndNmTags(rec, origSequence.getBytes(StandardCharsets.UTF_8), rec.getAlignmentStart() - 1, true, keepNM);
 
 
             //Remove reads with more than a certain amount of MM regarding readlength
-            if (rec.getIntegerAttribute("NM") > maxMM) {
+            if (rec.getIntegerAttribute("nM")!=null && rec.getIntegerAttribute("nM") > maxMM) {
+                rec.setMappingQuality(0);
                 rec.setReadUnmappedFlag(true);
             }
 
         } catch (NullPointerException | IndexOutOfBoundsException | IllegalArgumentException e) {
             rec.setReadUnmappedFlag(true);
+            rec.setMappingQuality(0);
             noInduced++;
             if(e.getClass().equals(new NullPointerException().getClass())){
                 nullPointer++;
@@ -403,6 +431,10 @@ public class RescueReads extends GediProgram {
                 value[0] = "";
                 value[1] = "";
                 String key;
+/*                //TODO
+                for(int r = 0; r < 8; r++){
+                    line = line.replaceFirst("_", ";");
+                }*/
                 if(firstRead) {
                     key = line.substring(0, line.indexOf("_"));
                     line = line.substring(line.indexOf("_")+1);
