@@ -70,7 +70,7 @@ The FASTQ file will be used for mapping, the idMap is necessary for a later func
 
 **3. Map the previously unmappable reads to a pseudogenome**
 
-Now, you want to map the FASTQ file to the pseudo genome created earlier. You can again use the same mapping tool and we suggest reducing the maximum amount of allowed mismatches compared to your original run, since one type of mismatches (e.g. T-to-C) will be ignored here.
+Now, you want to map the FASTQ file to the pseudo genome created earlier. You can again use the same mapping tool and we suggest reducing the maximum amount of allowed mismatches compared to your original run, since one type of mismatches (e.g. T-to-C) will be ignored here. Let's call this file pseudoGenomeMapped.bam. It will be used again in the next step.
 
 **4. Revert the pseudo-mapped reads to their original sequence and position on the reference genome**
 
