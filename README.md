@@ -132,4 +132,4 @@ The ReadRescue function has the following [optional] parameters:
     [-maxMM: Reads with more mismatches than the specified int will be removed. Default: 75% of read length]
     [-chrPrefix: Prefix/Pattern for chromosome names, * replaces chromosome number. E.g. chr*]
 
-
+As an output, you will get the complete & rescued bam-file as well as a cit-file of your data, which can be explored with GEDI. 
