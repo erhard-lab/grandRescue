@@ -3,6 +3,7 @@ SLAM-Rescue is a software to circumvent mappability problems and correct for 4sU
 
 # Prerequisites
 - Java >= 1.8
+- [GEDI](https://github.com/erhard-lab/gedi) 1.0.6
 - samtools >= 1.10
 - STAR >= 2.7.3a (or any other read mapping tool you like)
 
