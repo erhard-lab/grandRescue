@@ -11,7 +11,7 @@ grandRescue is a software to circumvent mappability problems and correct for 4sU
 
 - Install the GEDI framework
 - Create a "plugins" folder in your GEDI installation directory (same location as the gedi binary)
-- Download the grandRescue jar file and place it in the plugins folder
+- Download the grandRescue jar file from the [Releases tab](https://github.com/erhard-lab/grandRescue/releases) and place it in the plugins folder
 
 # Preparation: Create a pseudo genome
 
