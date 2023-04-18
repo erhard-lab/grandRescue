@@ -1,5 +1,5 @@
-## SLAM-Rescue
-SLAM-Rescue is a software to circumvent mappability problems and correct for 4sU-induced changes of RNA metabolism in SLAM-seq data sets. To achieve this, SLAM-Rescue offers the tools to align previously unmappable reads in a T-to-C mismatch independent manner. Additionally, the tools provided by SLAM-Rescue can also be used to apply the mismatch-independent read alignment to similar methods that deal with other kinds of mismatches (e.g. C-to-T mismatches in Bisulfite-seq) 
+## grandRescue
+grandRescue is a software to circumvent mappability problems and correct for 4sU-induced changes of RNA metabolism in metabolic labeling data, like SLAM-seq data sets. To achieve this, grandRescue offers the tools to align previously unmappable reads in a T-to-C mismatch independent manner. Additionally, the tools provided by grandRescue can also be used to apply the mismatch-independent read alignment to similar methods that deal with other kinds of mismatches (e.g. C-to-T mismatches in Bisulfite-seq) 
 
 # Prerequisites
 - Java >= 1.8
@@ -9,7 +9,9 @@ SLAM-Rescue is a software to circumvent mappability problems and correct for 4sU
 
 # Download and installation
 
-> To Do
+- Install the GEDI framework
+- Create a "plugins" folder in your GEDI installation directory (same location as the gedi binary)
+- Download the grandRescue jar file and place it in the plugins folder
 
 # Preparation: Create a pseudo genome
 
@@ -25,16 +27,17 @@ This will generate the FASTA and GTF files, which you can then use for the read 
 
 # Preparation: Prepare a gedi genome
 
-SLAM-Resuce uses the [GEDI framework](https://github.com/erhard-lab/gedi) and therefore, the reference genome as well as the pseudo genome need to be indexed with gedi as well.
+
+esuce uses the [GEDI framework](https://github.com/erhard-lab/gedi) and therefore, the reference genome as well as the pseudo genome need to be indexed with gedi as well.
 
     gedi -e IndexGenome -s reference.fa -a reference.gtf -n h.ens90
 
     gedi -e IndexGenome -s reference_pseudo_T2C.fa -a reference_pseudo.gtf -n h.ens90_pseudo
 
-With -n you can specify a name to access the indexed gedi genome in other applications like SLAM-Rescue. For more on gedi genomes, see [here](https://github.com/erhard-lab/gedi/wiki/Genomic).
+With -n you can specify a name to access the indexed gedi genome in other applications like grandRescue. For more on gedi genomes, see [here](https://github.com/erhard-lab/gedi/wiki/Genomic).
 
 
-# SLAM-Rescue functions
+# grandRescue functions
 
 The complete mapping and rescue procedure consists of the following steps:
 
@@ -44,7 +47,7 @@ The complete mapping and rescue procedure consists of the following steps:
 4. Revert the pseudo-mapped reads to their original sequence and position on the reference genome
 5. Combine your original mapping run and the rescued reads to a final bam file
 
-We will go over all these steps one by one, but under the section "Automated SLAM-Rescue" you can find a function to create a ready-to-use script that will run all the necessary steps for you.
+We will go over all these steps one by one, but under the section "Automated grandRescue" you can find a function to create a ready-to-use script that will run all the necessary steps for you.
 
 **1. Map your sequenced reads to a reference genome**
 
@@ -107,9 +110,9 @@ First, remove the unmapped reads from your original BAM file and then merge it w
     samtools view -b -F 4 reads.bam > reads_mapped.bam
     samtools merge reads_final.bam reads_mapped.bam reads_reverted.bam
 
-# Automated SLAM-Rescue
+# Automated grandRescue
 
-The easiest way to use SLAM-Rescue for your data set is the function gedi -e ReadRescue. It creates a ready-to-use bash-file with all intermediate steps to process your mapped BAM file. This function assumes you use STAR. If you use another mapping tool, just edit the bash-file after its creation and replace the STAR call with the mapping call of your choice.
+The easiest way to use grandRescue for your data set is the function gedi -e ReadRescue. It creates a ready-to-use bash-file with all intermediate steps to process your mapped BAM file. This function assumes you use STAR. If you use another mapping tool, just edit the bash-file after its creation and replace the STAR call with the mapping call of your choice.
 
 
     gedi -e ReadRescue -genome h.ens90 -pseudogenome h.ens90_pseudo -pseudoSTAR /folder/to/pseudoGenome/STAR-index -f reads.bam
