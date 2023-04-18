@@ -59,7 +59,7 @@ public class ReadExtraction {
                         tagsToAdd = tagsToAdd + "*" + s.tag + "~" + s.value + ";";
                     }
 
-                    idWriter.append(rec.getReadName() + "_" + seq + "_" + tagsToAdd + "\n");
+                    idWriter.append(rec.getReadName() + "°~" + seq + "°~" + tagsToAdd + "\n");
                     unmappedT2CWriter.append("@" + rec.getReadName() + "\n");
                     unmappedT2CWriter.append(convertNucleotides(seq, strandness, pairedEnd, from, to) + "\n");
                     unmappedT2CWriter.append("+\n");

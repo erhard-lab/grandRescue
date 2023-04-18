@@ -179,20 +179,10 @@ public class RescueReads extends GediProgram {
         }
 
         for (SAMRecord rec : it.loop()) {
-/*            //****************
-            //TODO
-            String readName = rec.getReadName();
-            for(int r = 0; r < 8; r++){
-                readName = readName.replaceFirst("_", ";");
-            }
-            rec.setReadName(readName);
-            //*****************/
             if (!pairedEnd && !strandness.equals(Strandness.Antisense) && rec.getReadNegativeStrandFlag()) {
                 continue;
             }
             if(rec.getReadUnmappedFlag()){
-                //rec.setReadName(rec.getReadName() + "_#" + map1.get(rec.getReadName())[0] + "_" + map1.get(rec.getReadName())[1]);
-                //samWriter.addAlignment(rec);
                 continue;
             }
             if(pairedEnd && !rec.getProperPairFlag()){
@@ -225,7 +215,14 @@ public class RescueReads extends GediProgram {
                     continue;
                 }
                 //****************/
-                samWriter.addAlignment(rec);
+                rec.setMappingQuality(255);
+                rec.setAttribute("NH", 1);
+                if(rec.getBaseQualityString().length()!=rec.getReadLength()){
+                    System.out.println("Warning: ReadLength and length QualityString of read don't match. Probably caused by some reads having the same read ID.\n" +
+                            rec.getReadName());
+                } else {
+                    samWriter.addAlignment(rec);
+                }
             } else {
                 if(rec.getFirstOfPairFlag()){
                     rec.setReadName(rec.getReadName() + "_#" + map1.get(rec.getReadName())[0] + "_#" + map2.get(rec.getReadName())[0] +  "_" + map1.get(rec.getReadName())[1]);
@@ -280,9 +277,13 @@ public class RescueReads extends GediProgram {
         completePairedReads(rec1, rec2);
 
         if (rec1 != null && rec1.getProperPairFlag()) {
+            rec1.setAttribute("NH", 1);
+            rec1.setMappingQuality(255);
             samWriter.addAlignment(rec1);
         }
         if (rec2 != null && rec2.getProperPairFlag()) {
+            rec2.setAttribute("NH", 1);
+            rec2.setMappingQuality(255);
             samWriter.addAlignment(rec2);
         }
     }
@@ -351,7 +352,7 @@ public class RescueReads extends GediProgram {
             }
         }
         if (!keepID) {
-            rec.setReadName(rec.getReadName().substring(0, rec.getReadName().indexOf("_")));
+            rec.setReadName(rec.getReadName().substring(0, rec.getReadName().indexOf("_#")));
         }
         if(!chrPrefix.equals("")){
             if(rec.getReferenceName().length()<=2){
@@ -431,23 +432,19 @@ public class RescueReads extends GediProgram {
                 value[0] = "";
                 value[1] = "";
                 String key;
-/*                //TODO
-                for(int r = 0; r < 8; r++){
-                    line = line.replaceFirst("_", ";");
-                }*/
                 if(firstRead) {
-                    key = line.substring(0, line.indexOf("_"));
-                    line = line.substring(line.indexOf("_")+1);
-                    value[0] = line.substring(0, line.indexOf("_"));
-                    value[1] = line.substring(line.indexOf("_")+1, line.contains("\\")?line.indexOf("\\"):line.length());
+                    key = line.substring(0, line.indexOf("°~"));
+                    line = line.substring(line.indexOf("°~")+2);
+                    value[0] = line.substring(0, line.indexOf("°~"));
+                    value[1] = line.substring(line.indexOf("°~")+2, line.contains("\\")?line.indexOf("\\"):line.length());
                     map.put(key, value);
                     //map.put(line.substring(0, line.indexOf("_")), line.substring(line.indexOf("/") + 1, line.contains("\\")?line.indexOf("\\"):line.length()));
                 } else  {
-                    line = line.substring(line.indexOf("\\")+1);
-                    key = line.substring(0, line.indexOf("_"));
-                    line = line.substring(line.indexOf("_")+1);
-                    value[0] = line.substring(0, line.indexOf("_"));
-                    value[1] = line.substring(line.indexOf("_")+1);
+                    line = line.substring(line.indexOf("\\")+2);
+                    key = line.substring(0, line.indexOf("°~"));
+                    line = line.substring(line.indexOf("°~")+2);
+                    value[0] = line.substring(0, line.indexOf("°~"));
+                    value[1] = line.substring(line.indexOf("°~")+2);
                     map.put(key, value);
                     //map.put(line.substring(0, line.indexOf("/")), line.substring(line.indexOf("\\") + 1));
                 }

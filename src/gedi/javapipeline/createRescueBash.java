@@ -16,7 +16,7 @@ import java.util.ArrayList;
 public class createRescueBash {
 
 
-    public static String createRescueBash(String origGenome, String pseudoGenome, String pseudoStarIndex, String tmpDir, String prefix, Strandness strandness, boolean pe, String from, String to, int maxMM, String chrPrefix) {
+    public static String createRescueBash(String origGenome, String pseudoGenome, String pseudoStarIndex, String tmpDir, String prefix, Strandness strandness, boolean pe, boolean grandslam, String from, String to, int maxMM, String chrPrefix) {
         String pathString = Paths.get(prefix+".sh").toAbsolutePath().toString();
         try {
             Charset charset = StandardCharsets.UTF_8;
@@ -53,7 +53,17 @@ public class createRescueBash {
             } else {
                 file = file.replaceAll("\\{pe_unmapped}", "");
             }
+            if(grandslam){
+                file = file.replaceAll("\\{grandslam}", "samtools index {prefix}.bam \n"+
+                        "gedi -e Bam2CIT {prefix}.cit reads.bam \n"+
+                        "gedi -e Slam -trim5p 15 -genomic h.ens90 -prefix grandslam_t15_noresc/noresc -reads {prefix}.cit -modelall -plot -D \n"+
+                        "gedi -e Slam -trim5p 15 -genomic h.ens90 -prefix grandslam_t15_resc/resc -reads {prefix}_rescued.cit -modelall -plot -D \n\n"+
+                        "Rscript plotEstimates.R"
 
+                );
+            } else {
+                file = file.replaceAll("\\{grandslam}", "");
+            }
             if(maxMM!=999) {
                 file = file.replaceAll("\\{maxMM}", "-maxMM " + maxMM);
             } else {
@@ -76,6 +86,21 @@ public class createRescueBash {
             Files.write(Paths.get(pathString), file.getBytes(charset));
             File finalFile = new File(pathString);
             finalFile.setExecutable(true);
+            if(grandslam){
+                String rFile = "";
+                if (!new File("plotEstimates.R").exists()) {
+                    URL res = Pipeline.class.getResource("/resources/plotEstimates.R");
+                    if (res!=null) {
+                        rFile = new LineIterator(res.openStream()).concat("\n");
+                    }
+                }
+                else {
+                    rFile = FileUtils.readAllText(new File("plotEstimates.R"));
+                }
+                Files.write(Paths.get("plotEstimates.R").toAbsolutePath(), rFile.getBytes(charset));
+                File rf = new File(Paths.get("plotEstimates.R").toAbsolutePath().toString());
+                rf.setExecutable(true);
+            }
         }catch (IOException e){
             e.printStackTrace();
         }

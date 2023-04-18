@@ -25,6 +25,7 @@ public class ReadRescue {
         String file = "";
         Strandness strandness = Strandness.Sense;
         boolean pe = false;
+        boolean grandslam = false;
         int maxMM = 999;
         String chrPrefix = "";
 
@@ -76,6 +77,9 @@ public class ReadRescue {
             else if(args[i].equals("-pe")){
                 pe = true;
             }
+            else if(args[i].equals("-grandslam")){
+                grandslam = true;
+            }
             else if(args[i].equals("-from")){
                 ArrayList<String> gnames = new ArrayList<>();
                 i = checkMultiParam(args, ++i, gnames);
@@ -104,14 +108,17 @@ public class ReadRescue {
                 break;
         }
 
-        if(file == "" || origGenome == "" || pseudoGenome == "" || pseudoStarIndex == ""){
-            System.out.println("Necessary infomation: -file, -genome, -pseudogenome, -pseudoSTAR");
+        if(file == "" || origGenome == "" || pseudoGenome == ""){
+            System.out.println("Necessary infomation: -f, -genome, -pseudogenome, -pseudoSTAR");
 
             usage();
             System.exit(1);
         }
+        if(pseudoStarIndex == ""){
+            System.out.println("IMPORTANT: You have not specified a STAR-index, make sure to edit the bash-file to add a proper call to a mapping tool.");
+        }
 
-        createRescueBash(origGenome, pseudoGenome, pseudoStarIndex, tmpDir, file.replace(".bam", ""), strandness, pe, from, to, maxMM, chrPrefix);
+        createRescueBash(origGenome, pseudoGenome, pseudoStarIndex, tmpDir, file.replace(".bam", ""), strandness, pe, grandslam, from, to, maxMM, chrPrefix);
 
     }
 
@@ -124,6 +131,6 @@ public class ReadRescue {
 
     private static void usage() {
         System.out.println("\nRescue unmappable reads of a single file in 4sU rna-seq experiments via mapping of unmappable reads to a pseudo genome and subsequent backtracking of new mappings to real genome.\n");
-        System.out.println("\nReadRescue [-genome] [-pseudogenome] [-pseudoSTAR] [-origmaps] [-prefix] [-tmp] [-tags] [-strandness] [-pe] [-from] [-to] [-maxMM] [-chrPrefix]\n\n -genome The gedi indexed genome (e.g. h.ens90, m.ens90...) \n -pseudogenome The gedi indexed pseudo genome of the original genome\n -pseudoSTAR The directory of the STAR index of the pseudo genome\n -origmaps Absolute path to the original bam-file with all mapped reads \n -prefix Use Prefix of the -origmaps bam-file\n\n");
+        System.out.println("\nReadRescue [-genome] [-pseudogenome] [-pseudoSTAR] [-f] [-strandness] [-pe] [-from] [-to] [-maxMM] [-chrPrefix]\n\n -genome The gedi indexed genome (e.g. h.ens90, m.ens90...) \n -pseudogenome The gedi indexed pseudo genome of the original genome\n -pseudoSTAR The directory of the STAR index of the pseudo genome\n -origmaps Absolute path to the original bam-file with all mapped reads \n -prefix Use Prefix of the -origmaps bam-file\n\n");
     }
 }

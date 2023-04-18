@@ -1,10 +1,9 @@
 #!/bin/bash
 
-wd=$(pwd)
 
 samtools view -b -f 4 {prefix}.bam > {prefix}_unmapped.bam
 {pe_unmapped}
-gedi -e ExtractReads {tags} -strandness {strandness} {from} {to} -f {prefix}_unmapped.bam
+gedi -e ExtractReads -strandness {strandness} {from} {to} -f {prefix}_unmapped.bam
 rm {prefix}_unmapped.bam
 samtools view -b -F 4 {prefix}.bam > {prefix}_final.bam
 STAR --runMode alignReads --runThreadN 8   --genomeDir {pseudoStarIndex} --genomeLoad LoadAndKeep --limitBAMsortRAM 8000000000 --outFilterMismatchNmax 10 --outFilterScoreMinOverLread 0.4 --outFilterMatchNminOverLread 0.4 --alignIntronMax 1 --outSAMmode Full --readFilesIn *_unmapped_T2C*fastq --outSAMtype BAM SortedByCoordinate --alignEndsType Extend5pOfReads12 --outSAMattributes nM MD NH
@@ -19,6 +18,7 @@ gedi -e Bam2CIT {prefix}_rescued.cit {prefix}_rescued.bam
 
 gedi -t . -e CorrectCIT {prefix}_rescued.cit
 gedi -t . -e ReadCount -g {genome} -m Weight {prefix}_rescued.cit
-mv {prefix}_rescued.cit* $wd
+
+{grandslam}
 
 echo "Done"

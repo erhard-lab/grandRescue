@@ -99,48 +99,6 @@ public class createOnlyExonGenome {
         return header;
     }
 
-    /**
-     * Add \n after certain amount of chars
-     * @param fasta
-     * @param separateAfter
-     * @throws IOException
-     */
-    public static void correctFASTA(File fasta, int separateAfter) throws IOException{
-        System.out.println("Correcting FASTA-File to " + separateAfter + " nucleotides per line...");
-        BufferedReader reader = new BufferedReader(new FileReader(fasta));
-        BufferedWriter writer = new BufferedWriter(new FileWriter(fasta.getPath().replace(".fasta", "_corr.fasta")));
-
-        int counter = 0;
-        boolean notFirstLine = false;
-
-        String currLine = reader.readLine();
-        while(currLine != null){
-            if(currLine.startsWith(">")){
-                if(notFirstLine){
-                    counter = 0;
-                    writer.append("\n");
-                } else {
-                    notFirstLine = true;
-                }
-                writer.append(currLine+"\n");
-                currLine = reader.readLine();
-                continue;
-            }
-            for(int i = 0; i < currLine.length(); i++){
-                writer.append(currLine.charAt(i));
-                counter++;
-                if(counter == separateAfter){
-                    counter = 0;
-                    writer.append("\n");
-                }
-            }
-            currLine = reader.readLine();
-
-        }
-
-        reader.close();
-        writer.close();
-    }
 
     public static void createGenomeFiles(String gtfString, String fastaString, String outPath, String from, String to, boolean toPlusStrand){
 
@@ -167,7 +125,6 @@ public class createOnlyExonGenome {
 
             System.out.println("GTF separated into chromosomal records...");
             System.out.println("Start writing FASTA & GTF-Files...");
-            int counter = 0;
             for(String key : map.keySet()){
                 fastaWriter.append(">"+key+"\n");
                 System.out.println("- Chromosome " + key);
@@ -178,11 +135,6 @@ public class createOnlyExonGenome {
 
                 ArrayList<String> records = map.get(key);
                 for(int i = 0; i < records.size(); i++){
-                    counter++;
-                    if(counter == 11){
-                        counter = 0;
-                        //break;
-                    }
                     String rec = records.get(i);
                     //Groups:
                     //1 Chromosome                          4 startPos  7 strand (+,-,.)
