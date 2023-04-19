@@ -1,5 +1,5 @@
 ## grandRescue
-grandRescue is a software to circumvent mappability problems and correct for 4sU-induced changes of RNA metabolism in metabolic labeling data, like SLAM-seq data sets. To achieve this, grandRescue offers the tools to align previously unmappable reads in a T-to-C mismatch independent manner. Additionally, the tools provided by grandRescue can also be used to apply the mismatch-independent read alignment to similar methods that deal with other kinds of mismatches (e.g. C-to-T mismatches in Bisulfite-seq) 
+grandRescue is a software to circumvent mappability problems and correct for 4sU-induced quantification bias in metabolic labeling data, like SLAM-seq data sets. To achieve this, grandRescue offers the tools to align previously unmappable reads in a T-to-C mismatch independent manner. Additionally, the tools provided by grandRescue can also be used to apply the mismatch-independent read alignment to similar methods that deal with other kinds of mismatches (e.g. C-to-T mismatches in Bisulfite-seq) 
 
 # Prerequisites
 - Java >= 1.8
@@ -83,7 +83,7 @@ For example, the parameters for mapping with STAR could look like this:
 
 **4. Revert the pseudo-mapped reads to their original sequence and position on the reference genome**
 
-The reads mapped to the pseudo transcriptome now need to be returned to their original position in the reference genome and their original sequence needs to be restored. For this, you will need the idMap file from step 2.
+The reads mapped to the pseudotranscriptome now need to be returned to their original position in the reference genome and their original sequence needs to be restored. For this, you will need the idMap file from step 2.
 
     gedi -e RescuePseudoReads -genome h.ens90 -pseudogenome h.ens90_pseudo -origmaps reads.bam -pseudomaps pseudoTranscriptomeMapped.bam -idMap reads.idMap
 
@@ -109,6 +109,8 @@ First, remove the unmapped reads from your original BAM file and then merge it w
     
     samtools view -b -F 4 reads.bam > reads_mapped.bam
     samtools merge reads_final.bam reads_mapped.bam reads_reverted.bam
+
+And with this, we're done! The reads_final.bam file can now be used for any subsequent analyses.
 
 # Automated grandRescue
 
